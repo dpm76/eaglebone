@@ -115,11 +115,11 @@ class FlightController(object):
         #angle X
         #Moving the drone along Y-direction makes it turning on X-axis 
         #Caution! Angle around X-axis as positive sense means moving backwards
-        self._driver.shiftY(-output[0])
+        #self._driver.shiftY(-output[0])
         
         #angle Y
         #Moving the drone along X-direction makes it turning on Y-axis
-        self._driver.shiftX(output[1])
+        #self._driver.shiftX(output[1])
         
         #angle Z
         self._driver.spin(output[2])        
@@ -139,10 +139,19 @@ class FlightController(object):
     def _setPIDAnglesOutput(self, output):
         
         #angle X        
-        self._pid.setTarget(output[0], 0)
+        #self._pid.setTarget(output[0], 0)
         
         #angle Y
-        self._pid.setTarget(output[1], 1)
+        #self._pid.setTarget(output[1], 1)
+
+        #angle X
+        #Moving the drone along Y-direction makes it turning on X-axis 
+        #Caution! Angle around X-axis as positive sense means moving backwards
+        self._driver.shiftY(-output[0])
+        
+        #angle Y
+        #Moving the drone along X-direction makes it turning on Y-axis
+        self._driver.shiftX(output[1])
                         
         logging.debug("PID-angles output: {0}".format(output))
     
