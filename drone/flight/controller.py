@@ -7,10 +7,10 @@ Created on 14/04/2015
 '''
 import logging
 import rpyc
-from threading import Thread
 import time
 
 from config import Configuration
+from emulation.drone import EmulatedDrone
 from emulation.sensor import EmulatedSensor
 from flight.driving.driver import Driver
 from flight.stabilization.pid import PID
@@ -94,7 +94,7 @@ class FlightController(object):
             
         elif imuClass == Configuration.VALUE_IMU_CLASS_EMULATION:
             
-            self._sensor = EmulatedSensor()
+            self._sensor = EmulatedSensor(EmulatedDrone.REALISTIC_FLIGHT)
             
         else: #Dummy as default
             
@@ -300,6 +300,8 @@ class FlightController(object):
             self._pidKP[axisIndex] = valueP
             self._pidKI[axisIndex] = valueI
             self._pidKD[axisIndex] = valueD
+            
+            print "constantes: {0}".format([valueP, valueI, valueD])
             
 
     def alterPidAccelConstants(self, axisIndex, valueP, valueI, valueD):

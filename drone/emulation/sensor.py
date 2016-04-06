@@ -20,10 +20,12 @@ class EmulatedSensor(object):
     ERROR_ANGLE_SPEED_DISTRIBUTION = [-1.0, 1.0] #[-0.1, 0.15]
     ERROR_ANGLE_DISTRIBUTION = [-0.0, 0.0] #[-0.08, 0.1]
     ERROR_ACCEL_DISTRIBUTION = [-0.12, 0.1] #[-0.1, 0.15]
-
-    def __init__(self):
+    
+    def __init__(self, addNoise):
         
-        seed()
+        self._addNoise = addNoise
+        if self._addNoise:        
+            seed()
         self._drone = EmulatedDrone.getInstance()
     
     
@@ -42,7 +44,12 @@ class EmulatedSensor(object):
         
         state = self._drone.getState()        
 
-        return self._noisify(state._angleSpeeds, EmulatedSensor.ERROR_ANGLE_SPEED_DISTRIBUTION)
+        angleSpeeds = \
+            self._noisify(state._angleSpeeds, EmulatedSensor.ERROR_ANGLE_SPEED_DISTRIBUTION) \
+            if self._addNoise \
+            else deepcopy(state._angleSpeeds)
+            
+        return angleSpeeds 
 
     
     def readAngles(self):
@@ -51,7 +58,10 @@ class EmulatedSensor(object):
         '''
         
         state = self._drone.getState()        
-        angles = self._noisify(state._angles, EmulatedSensor.ERROR_ANGLE_DISTRIBUTION)
+        angles = \
+            self._noisify(state._angles, EmulatedSensor.ERROR_ANGLE_DISTRIBUTION) \
+            if self._addNoise \
+            else deepcopy(state._angles) 
         
         return angles
 
@@ -64,7 +74,10 @@ class EmulatedSensor(object):
     def readAccels(self):
         
         state = self._drone.getState()        
-        accels = self._noisify(state._accels, EmulatedSensor.ERROR_ACCEL_DISTRIBUTION)
+        accels = \
+            self._noisify(state._accels, EmulatedSensor.ERROR_ACCEL_DISTRIBUTION) \
+            if self._addNoise \
+            else deepcopy(state._accels)
         
         return accels
 
