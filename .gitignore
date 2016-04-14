@@ -1,3 +1,4 @@
 /drone.config.json
 *.pyc
+*.log
 .metadata
