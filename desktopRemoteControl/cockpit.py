@@ -23,24 +23,27 @@ class Cockpit(ttkFrame):
     Remote controller GUI 
     '''
     
+    #TODO: 20160415 DPM - Set these values from configuration file
     THROTTLE_BY_USER = False
+
+    DEFAULT_DRONE_IP = "192.168.1.130"
+    DEFAULT_DRONE_PORT = 2121
+    #---
     
+
     KEY_ANG_SPEED = "ang-speed"
     KEY_ANGLES = "angles"
     KEY_ACCEL = "accel"
     
     PID_KEYS = ["P", "I", "D"]
 
-    DEFAULT_DRONE_IP = "192.168.1.130"
-    DEFAULT_DRONE_PORT = 2121
-
     DIR_NONE = 0
     DIR_VERTICAL = 1
     DIR_HORIZONTAL = 2
     
-    MAX_ACCEL = 10.0 #TODO angles. Replace by m/s²
+    MAX_ACCEL = 10.0 #TODO currently angles. Replace by m/s² later
     MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
-    MAX_ANGLE_SPEED = 50.0 #º/s
+    MAX_ANGLE_SPEED = 20.0 #º/s
 
     def __init__(self, parent, isDummy = False, droneIp = DEFAULT_DRONE_IP, dronePort = DEFAULT_DRONE_PORT):
         '''
@@ -206,7 +209,7 @@ class Cockpit(ttkFrame):
         if Cockpit.THROTTLE_BY_USER:
 
             self._thrustScale = Scale(controlFrame, orient=VERTICAL, from_=100.0, to=0.0, \
-                                tickinterval=0, variable=self._throttle, \
+                                tickinterval=0, variable=self._throttle, resolution=0.1, \
                                 length=200, showvalue=1, \
                                 state=DISABLED,
                                 command=self._onThrustScaleChanged)
@@ -365,7 +368,8 @@ class Cockpit(ttkFrame):
                 
             elif event.keysym == "space":
                 self._yawReset()
-                self._thrustReset()
+                if not Cockpit.THROTTLE_BY_USER:
+                    self._thrustReset()
                 
         elif not self._controlKeysLocked and not self._controlKeyActive:
             
@@ -487,7 +491,7 @@ class Cockpit(ttkFrame):
     def _thrustScaleUp(self):
 
         if self._started.get(): 
-            newValue = self._thrustScale.get() + 1
+            newValue = self._thrustScale.get() + 0.1 if Cockpit.THROTTLE_BY_USER else 1.0
             self._thrustScale.set(newValue)
             
             self._updateTarget()
@@ -496,7 +500,7 @@ class Cockpit(ttkFrame):
     def _thrustScaleDown(self):
         
         if self._started.get():
-            newValue = self._thrustScale.get() - 1
+            newValue = self._thrustScale.get() - 0.1 if Cockpit.THROTTLE_BY_USER else 1.0
             self._thrustScale.set(newValue)
             
             self._updateTarget()
@@ -557,12 +561,12 @@ class Cockpit(ttkFrame):
 
     def _onMouseWheel(self, eventArgs):
 
-        factor = int(eventArgs.delta/120)
+        factor = eventArgs.delta/(1200.0 if Cockpit.THROTTLE_BY_USER and not self._controlKeyActive else 120.0)
 
         if not self._controlKeyActive:
         
             if self._started.get():
-                newValue = self._thrustScale.get() + factor
+                newValue = self._thrustScale.get() + factor 
                 self._thrustScale.set(newValue)
                 
                 self._updateTarget()
