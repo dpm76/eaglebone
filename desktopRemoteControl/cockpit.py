@@ -24,7 +24,7 @@ class Cockpit(ttkFrame):
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
-    THROTTLE_BY_USER = False
+    THROTTLE_BY_USER = True
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
@@ -166,7 +166,7 @@ class Cockpit(ttkFrame):
         
         #Info
         infoFrame = tkFrame(self)
-        infoFrame.grid(column=1, row=1, sticky="E", padx=4)
+        infoFrame.grid(column=1, row=1, sticky="NE", padx=4)
         
         #Throttle
         Label(infoFrame, text="Throttle").grid(column=0, row=0, sticky="WE")        
@@ -491,7 +491,8 @@ class Cockpit(ttkFrame):
     def _thrustScaleUp(self):
 
         if self._started.get(): 
-            newValue = self._thrustScale.get() + 0.1 if Cockpit.THROTTLE_BY_USER else 1.0
+            newValue = self._thrustScale.get() \
+                + (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
             self._updateTarget()
@@ -500,7 +501,8 @@ class Cockpit(ttkFrame):
     def _thrustScaleDown(self):
         
         if self._started.get():
-            newValue = self._thrustScale.get() - 0.1 if Cockpit.THROTTLE_BY_USER else 1.0
+            newValue = self._thrustScale.get() \
+                - (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
             self._updateTarget()

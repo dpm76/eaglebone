@@ -137,7 +137,7 @@ class Display(ttkFrame):
         #Info frame
 
         infoFrame = tkFrame(self)
-        infoFrame.grid(column=1, row=0, sticky="NE")
+        infoFrame.grid(column=1, row=0, sticky="NE", padx=4)
 
         #Angles
         Label(infoFrame, text="Coords").grid(column=0, row=0, sticky="WE")        
