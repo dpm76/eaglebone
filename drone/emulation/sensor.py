@@ -19,7 +19,7 @@ class EmulatedSensor(object):
     
     ERROR_ANGLE_SPEED_DISTRIBUTION = [-1.0, 1.0] #[-0.1, 0.15]
     ERROR_ANGLE_DISTRIBUTION = [-0.0, 0.0] #[-0.08, 0.1]
-    ERROR_ACCEL_DISTRIBUTION = [-0.12, 0.1] #[-0.1, 0.15]
+    ERROR_ACCEL_DISTRIBUTION = [-0.1, 0.1] #[-0.1, 0.15]
 
     def __init__(self):
         

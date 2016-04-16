@@ -16,7 +16,7 @@ class Propeller(object):
     
     GRAVITY = 9.807 #m/s²
     
-    LPF = 0.7 #Low-pass filter threshold
+    LPF = 1.0 #Low-pass filter threshold
     
     ROTATION_CW = 0
     ROTATION_CCW = 1

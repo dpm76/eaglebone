@@ -24,7 +24,7 @@ class EmulatedDrone(object):
     #TODO Create config
     REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
     PROPELLER_THRUST_RATE = 0.01 # 1.0kg @100%
-    PROPELLER_COUNTER_ROTATION_RATE = 10.0    
+    PROPELLER_COUNTER_ROTATION_RATE = 50.0    
     WEIGHT = 1.8 # kg
     MAX_CRASH_SPEED = -1.0 #m/s
     ARM_LENGTH = 0.23 #m
@@ -51,10 +51,10 @@ class EmulatedDrone(object):
         
         if self._realisticFlight:
         
-            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.94, 1.0 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.91, 0.6 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.85, 1.0 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.95, 1.4 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
+            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.98, 1.01 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.97, 0.97 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.96, 0.99 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.99, 1.03 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
         else:
             
             self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
