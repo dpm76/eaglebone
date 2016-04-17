@@ -55,6 +55,9 @@ class Display(ttkFrame):
         
      
     def setStateProvider(self, stateProvider):
+        '''
+        Set the flight state provider
+        '''
         
         self._stateProvider = stateProvider
         
@@ -62,6 +65,12 @@ class Display(ttkFrame):
     
     
     def setLauncherMethod(self, launcherMethod):
+        '''
+        Set the method which controlls the process.
+        
+        It is required since the main thread (main loop) is used by the GUI. 
+        Therefore, the process for the business logic must be executed within another thread. 
+        '''
         
         self._launcherMethod = launcherMethod
         
