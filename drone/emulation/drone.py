@@ -24,7 +24,7 @@ class EmulatedDrone(object):
     REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
     X_CONFIGURATON = False # Indicates whether the drone is configured as X or + 
     PROPELLER_THRUST_RATE = 0.01 # 1.0kg @100%
-    PROPELLER_COUNTER_ROTATION_RATE = 50.0    
+    PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
     WEIGHT = 1.8 # kg
     MAX_CRASH_SPEED = -1.0 #m/s
     ARM_LENGTH = 0.23 #m    
@@ -50,6 +50,7 @@ class EmulatedDrone(object):
         self._state = State()
         if EmulatedDrone.X_CONFIGURATON:
             self._state._angles = [0.0, 0.0, -45.0]
+            
         self._weight = EmulatedDrone.WEIGHT        
         self._armLength = EmulatedDrone.ARM_LENGTH        
         self._arcSpeedToAngleSpeed = 180.0/PI*self._armLength
@@ -130,7 +131,8 @@ class EmulatedDrone(object):
                 #Calculate drone's current yaw (self._state._angles[2])
                 #Positive angles are CCW for axis Z
                 self._state._angles[2] += (self._state._angleSpeeds[2] + previousAngleSpeedZ) * dt2           
-                    
+                self._state._angles[2] = self._normalizeAngle(self._state._angles[2])
+                
                 #Calculate drone's angle-speeds
                 accelAxisX = self._propellers[3].getOrtogonalAccel() - self._propellers[1].getOrtogonalAccel()
                 previousAngleSpeedX = self._state._angleSpeeds[0]
@@ -142,7 +144,9 @@ class EmulatedDrone(object):
     
                 #Calculate drone's angles (heading was already calculated)
                 self._state._angles[0] += (self._state._angleSpeeds[0] + previousAngleSpeedX) * dt2
-                self._state._angles[1] += (self._state._angleSpeeds[1] + previousAngleSpeedY) * dt2                         
+                self._state._angles[0] = self._normalizeAngle(self._state._angles[0])
+                self._state._angles[1] += (self._state._angleSpeeds[1] + previousAngleSpeedY) * dt2
+                self._state._angles[1] = self._normalizeAngle(self._state._angles[1])                         
     
             #Update propeller angles
             for propeller in self._propellers:
@@ -151,7 +155,17 @@ class EmulatedDrone(object):
             #if dt < 1.0:
             #    print self._state            
         
+    
+    def _normalizeAngle(self, angle):
         
+        if angle < -180.0:
+            angle +=  360.0
+        elif angle > 180: 
+            angle -= 360.0
+            
+        return angle
+     
+    
     def getState(self):
         
         currentState = deepcopy(self._state)
