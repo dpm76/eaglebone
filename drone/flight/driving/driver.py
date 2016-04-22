@@ -49,20 +49,22 @@ class Driver(object):
         
         if motorClass == Configuration.VALUE_MOTOR_CLASS_LOCAL:
             motor = Motor(motorId)
+            self._maxMotorThrottle = Motor.MAX_THROTTLE
             
         elif motorClass == Configuration.VALUE_MOTOR_CLASS_REMOTE:
-            #TODO Implement remote motor class
-            message = "Remote motor is not implemented yet!"
+            #TODO deprecated: this feature won't be implemented
+            message = "Remote motor will not be implemented!"
             print message
             logging.fatal(message)
             sys.exit()
             
         elif motorClass == Configuration.VALUE_MOTOR_CLASS_EMULATION:
             motor = EmulatedMotor(motorId)
+            self._maxMotorThrottle = EmulatedMotor.MAX_THROTTLE
             
         else: #default VALUE_MOTOR_CLASS_DUMMY
             motor = MotorDummy(motorId)        
-            
+            self._maxMotorThrottle = MotorDummy.MAX_THROTTLE            
             
         return motor
             
@@ -113,7 +115,6 @@ class Driver(object):
             
     def addThrottle(self, increment):
 
-        #TODO 20150611 DPM - Should the throttle be added into the increments and to be commited later?
         with self._lock:
             self._baseThrottle += increment
             #for motor in self._motors:
@@ -169,3 +170,34 @@ class Driver(object):
     def getThrottles(self):
         
         return [motor.getThrottle() for motor in self._motors]
+
+
+    def getMaxIncrement(self):
+        '''
+        Get the maximal increment that let motors keeping within inside the motor throttle range
+        '''
+        
+        maxRange = 100.0
+
+        for index in range(Driver.NUM_MOTORS):
+            motorRange = self._getMotorMaxIncrement(index)
+            if motorRange < maxRange:
+                maxRange = motorRange
+
+        return maxRange
+
+    
+    def _getMotorMaxIncrement(self, motorIndex):
+
+        motorThrottle = self._motors[motorIndex].getThrottle()
+
+        if motorThrottle < 0.0 or motorThrottle >= self._maxMotorThrottle:
+            motorRange = 0.0
+        else:
+            motorRange = self._maxMotorThrottle - motorThrottle
+            if motorRange > motorThrottle:
+                motorRange = motorThrottle
+
+        return motorRange
+
+            

@@ -22,6 +22,7 @@ class EmulatedDrone(object):
     
     #TODO Create config
     REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
+    HANGED_MODE = True #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
     X_CONFIGURATON = False # Indicates whether the drone is configured as X or + 
     PROPELLER_THRUST_RATE = 0.01 # 1.0kg @100%
     PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
@@ -50,6 +51,9 @@ class EmulatedDrone(object):
         self._state = State()
         if EmulatedDrone.X_CONFIGURATON:
             self._state._angles = [0.0, 0.0, -45.0]
+
+        if EmulatedDrone.HANGED_MODE:
+            self._state._coords = [0.0, 0.0, 1.0]
             
         self._weight = EmulatedDrone.WEIGHT        
         self._armLength = EmulatedDrone.ARM_LENGTH        
@@ -103,10 +107,16 @@ class EmulatedDrone(object):
             self._state._accels = [force / self._weight for force in forces]
             
             #Speed & position
-            for index in range(3):
-                previousSpeed = self._state._speeds[index]
-                self._state._speeds[index] += (self._state._accels[index] + previousAccels[index]) * dt2
-                self._state._coords[index] += (self._state._speeds[index] + previousSpeed) * dt2
+            if EmulatedDrone.HANGED_MODE:
+
+                for index in range(3):
+                    self._state._speeds[index] += (self._state._accels[index] + previousAccels[index]) * dt2
+
+            else:
+                for index in range(3):
+                    previousSpeed = self._state._speeds[index]
+                    self._state._speeds[index] += (self._state._accels[index] + previousAccels[index]) * dt2
+                    self._state._coords[index] += (self._state._speeds[index] + previousSpeed) * dt2
             
             #The drone can not fly underground
             if self._state._coords[2] <= 0.0 and self._state._speeds[2] <= 0.0:
