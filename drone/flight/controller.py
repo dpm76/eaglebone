@@ -6,8 +6,6 @@ Created on 14/04/2015
 @author: david
 '''
 import logging
-import rpyc
-from threading import Thread
 import time
 
 from config import Configuration
@@ -78,11 +76,11 @@ class FlightController(object):
             
             self._sensor = Sensor()
             
-        elif imuClass == Configuration.VALUE_IMU_CLASS_REMOTE:
-            
-            self._remote = rpyc.classic.connect(self._config[Configuration.KEY_REMOTE_ADDRESS])
-            imuDummy = self._remote.modules["sensors.IMU_dummy"]
-            self._sensor = imuDummy.IMUDummy()
+#         elif imuClass == Configuration.VALUE_IMU_CLASS_REMOTE:
+#             
+#             self._remote = rpyc.classic.connect(self._config[Configuration.KEY_REMOTE_ADDRESS])
+#             imuDummy = self._remote.modules["sensors.IMU_dummy"]
+#             self._sensor = imuDummy.IMUDummy()
 
         elif imuClass == Configuration.VALUE_IMU_CLASS_3000EMU:
             
@@ -122,11 +120,7 @@ class FlightController(object):
         self._driver.shiftX(output[1])
         
         #angle Z
-        maxIncrement = self._driver.getMaxIncrement()
-        if abs(output[2]) <= maxIncrement:
-            self._driver.spin(output[2])
-        else:            
-            self._pid.resetIntegral(2)
+        self._driver.spin(output[2])
         
         logging.debug("PID-angles-speed output: {0}".format(output))
     

@@ -185,9 +185,5 @@ class PID(object):
     def enableIntegrals(self):
         
         self._integralsEnabled = True
-        
- 
-    def resetIntegral(self, index):
-        
-        self._integrals[index] = 0.0
+       
     

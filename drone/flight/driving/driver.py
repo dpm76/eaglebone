@@ -172,32 +172,4 @@ class Driver(object):
         return [motor.getThrottle() for motor in self._motors]
 
 
-    def getMaxIncrement(self):
-        '''
-        Get the maximal increment that let motors keeping within inside the motor throttle range
-        '''
-        
-        maxRange = 100.0
-
-        for index in range(Driver.NUM_MOTORS):
-            motorRange = self._getMotorMaxIncrement(index)
-            if motorRange < maxRange:
-                maxRange = motorRange
-
-        return maxRange
-
-    
-    def _getMotorMaxIncrement(self, motorIndex):
-
-        motorThrottle = self._motors[motorIndex].getThrottle()
-
-        if motorThrottle < 0.0 or motorThrottle >= self._maxMotorThrottle:
-            motorRange = 0.0
-        else:
-            motorRange = self._maxMotorThrottle - motorThrottle
-            if motorRange > motorThrottle:
-                motorRange = motorThrottle
-
-        return motorRange
-
             
