@@ -123,12 +123,10 @@ class FlightController(object):
         
         #angle Z
         maxIncrement = self._driver.getMaxIncrement()
-        if abs(output[2]) < maxIncrement:
+        if abs(output[2]) <= maxIncrement:
             self._driver.spin(output[2])
-        else:
-            message = "Max: {0}; Output: {1}".format(maxIncrement, output[2])
-            print message
-            logging.warning(message)
+        else:            
+            self._pid.resetIntegral(2)
         
         logging.debug("PID-angles-speed output: {0}".format(output))
     

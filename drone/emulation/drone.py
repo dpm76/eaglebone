@@ -22,7 +22,7 @@ class EmulatedDrone(object):
     
     #TODO Create config
     REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
-    HANGED_MODE = True #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
+    HANGED_MODE = False #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
     X_CONFIGURATON = False # Indicates whether the drone is configured as X or + 
     PROPELLER_THRUST_RATE = 0.01 # 1.0kg @100%
     PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
