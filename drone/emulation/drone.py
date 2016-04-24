@@ -22,7 +22,7 @@ class EmulatedDrone(object):
     '''
     
     #Realistic or ideal flight emulation mode
-    REALISTIC_FLIGHT = False
+    REALISTIC_FLIGHT = True
     
     #TODO Create config
     PROPELLER_THRUST_RATE = 0.01 # 1.0kg @100%
