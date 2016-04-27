@@ -96,4 +96,4 @@ class DriverTestCase(unittest.TestCase):
         throttles = self._driver.getThrottles()
 
         #Testing in +-configuration. X-configuration, will issue different result.
-        self.assertListEqual(throttles, [60.0, 40.0, 60.0, 40.0], "Driver's motors were not properly shifted")
+        self.assertListEqual(throttles, [60.0, 40.0, 60.0, 40.0], "Driver's motors were not properly spinned")
