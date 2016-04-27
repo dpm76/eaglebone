@@ -50,6 +50,11 @@ class EmulatedMotor(object):
         
         return self._throttle
     
+
+    def getPropellerThrottle(self):
+
+        return self._propeller.getThrottle()
+
     
     def addThrottle(self, increment):
         """
