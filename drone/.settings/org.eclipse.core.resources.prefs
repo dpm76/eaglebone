@@ -21,6 +21,7 @@ encoding//sensors/imu6050dmp.py=utf-8
 encoding//sensors/vector.py=utf-8
 encoding//tests/color_tracking.py=utf-8
 encoding//tests/commander.py=utf-8
+encoding//tests/compass.py=utf-8
 encoding//tests/flight_emulator.py=utf-8
 encoding//tests/gyro.py=utf-8
 encoding//tests/imu3000.py=utf-8

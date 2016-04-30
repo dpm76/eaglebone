@@ -4,8 +4,8 @@ Created on 25 de feb. de 2016
 
 @author: david
 '''
-from Tkconstants import BOTH
-from Tkinter import Tk, Frame as tkFrame, Canvas
+from Tkconstants import BOTH, DISABLED
+from Tkinter import Tk, Frame as tkFrame, Canvas, StringVar, Entry, Label
 from math import cos, sin, radians
 from threading import Thread
 from ttk import Frame as ttkFrame, Style
@@ -18,7 +18,7 @@ class Display(ttkFrame):
     Displays the drone state on a graphical interface
     '''
 
-    REFRESH_PERIOD = 0.2
+    REFRESH_PERIOD = 0.2 #5Hz by default
     
     ARM_LENGTH = 23 #pixels
     PIXELS_METER = 100.0 #pixels/meter
@@ -55,6 +55,9 @@ class Display(ttkFrame):
         
      
     def setStateProvider(self, stateProvider):
+        '''
+        Set the flight state provider
+        '''
         
         self._stateProvider = stateProvider
         
@@ -62,6 +65,12 @@ class Display(ttkFrame):
     
     
     def setLauncherMethod(self, launcherMethod):
+        '''
+        Set the method which controlls the process.
+        
+        It is required since the main thread (main loop) is used by the GUI. 
+        Therefore, the process for the business logic must be executed within another thread. 
+        '''
         
         self._launcherMethod = launcherMethod
         
@@ -109,6 +118,8 @@ class Display(ttkFrame):
         
         self.pack(fill=BOTH, expand=1)
         
+        #Draw frame
+
         drawFrame = tkFrame(self)
         drawFrame.grid(column=0, row=0, sticky="W")
         
@@ -130,6 +141,36 @@ class Display(ttkFrame):
         
         self._linesXZ = [self._canvasXZ.create_line(100,200, 90, 200, fill="#0000ff"), \
                          self._canvasXZ.create_line(100,200, 110, 200, fill="#0000ff")]
+
+        
+        #Info frame
+
+        infoFrame = tkFrame(self)
+        infoFrame.grid(column=1, row=0, sticky="NE", padx=4)
+
+        #Angles
+        Label(infoFrame, text="Coords").grid(column=0, row=0, sticky="WE")        
+        self._coordTexts = [StringVar(),StringVar(),StringVar()]
+        for index in range(3):
+            Entry(infoFrame, textvariable=self._coordTexts[index], state=DISABLED, width=5).grid(column=index, row=1)
+
+        #Angles
+        Label(infoFrame, text="Angles").grid(column=0, row=2, sticky="WE")        
+        self._angleTexts = [StringVar(),StringVar(),StringVar()]
+        for index in range(3):
+            Entry(infoFrame, textvariable=self._angleTexts[index], state=DISABLED, width=5).grid(column=index, row=3)
+               
+        #Accels
+        Label(infoFrame, text="Accels").grid(column=0, row=4, sticky="WE")
+        self._accelTexts = [StringVar(),StringVar(),StringVar()]
+        for index in range(3):
+            Entry(infoFrame, textvariable=self._accelTexts[index], state=DISABLED, width=5).grid(column=index, row=5)
+        
+        #Speeds
+        Label(infoFrame, text="Speeds").grid(column=0, row=6, sticky="WE")
+        self._speedTexts = [StringVar(),StringVar(),StringVar()]
+        for index in range(3):
+            Entry(infoFrame, textvariable=self._speedTexts[index], state=DISABLED, width=5).grid(column=index, row=7)
         
             
     def _plotXY(self, coord, angles):
@@ -189,6 +230,12 @@ class Display(ttkFrame):
                 self._plotXY(state._coords, angles)
                 self._plotXZ(state._coords, angles)
                 self._plotYZ(state._coords, angles)
+
+                for index in range(3):
+                    self._coordTexts[index].set("{0:.3f}".format(state._coords[index]))
+                    self._angleTexts[index].set("{0:.3f}".format(state._angles[index]))
+                    self._accelTexts[index].set("{0:.3f}".format(state._accels[index]))
+                    self._speedTexts[index].set("{0:.3f}".format(state._speeds[index]))
                 
             else:
                 self._canvasXY.create_text((200,100), text="CRASHED!", fill="#ff0000")

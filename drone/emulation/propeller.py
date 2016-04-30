@@ -16,6 +16,8 @@ class Propeller(object):
     
     GRAVITY = 9.807 #m/s²
     
+    LPF = 0.9 #Low-pass filter threshold
+    
     ROTATION_CW = 0
     ROTATION_CCW = 1
 
@@ -44,11 +46,14 @@ class Propeller(object):
             self._counterRotationRate = -counterRotationRate
 
         self._throttle = 0.0
+        self._thrustModule = 0.0
         self._thrust = [0.0]*3
         
         self._angles = [0.0] * 3
         
         self._drone = drone
+        
+        self._lowPassFilter = Propeller.LPF if self._drone._realisticFlight else 1.0
     
     
     def getWeight(self):
@@ -99,11 +104,12 @@ class Propeller(object):
     
     def _update(self):
 
-        thrustModule = self._throttle * self._throttleThrustRate * Propeller.GRAVITY
-        self._thrust = Vector.rotateVector3D([0.0, 0.0, thrustModule], self._angles)
+        newThrustModule = self._throttle * self._throttleThrustRate * Propeller.GRAVITY
+        self._thrustModule += self._lowPassFilter * (newThrustModule - self._thrustModule) 
+        self._thrust = Vector.rotateVector3D([0.0, 0.0, self._thrustModule], self._angles)
         self._thrust[2] -= Propeller.GRAVITY * self._thrustedWeight
 
         #Counter-rotation        
-        self._counterRotation = thrustModule * self._counterRotationRate
+        self._counterRotation = self._thrustModule * self._counterRotationRate
     
         self._drone.onPropellerUpdated()
