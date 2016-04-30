@@ -25,9 +25,12 @@ class Driver(object):
     
     NUM_MOTORS = 4
     
-    def __init__(self):
+    def __init__(self, motorType=""):
         '''
         Constructor
+
+        @param motorType: String with the type of the motor to implement. See Configuration.VALUE_MOTOR_CLASS_*
+        If motorType value is not provided, the configuration will be used.
         '''
         
         self._lock = Lock()
@@ -37,8 +40,11 @@ class Driver(object):
         self._baseThrottle = 0.0
         self._motorIncrements = [0.0] * Driver.NUM_MOTORS
 
+        if motorType == "":
+            motorType = self._config[Configuration.KEY_MOTOR_CLASS]
+
         for motorId in range(Driver.NUM_MOTORS):
-            motor = self._createMotor(motorId, self._config[Configuration.KEY_MOTOR_CLASS])
+            motor = self._createMotor(motorId, motorType)
             self._motors.append(motor)            
             
     
