@@ -111,16 +111,7 @@ class FlightController(object):
 
     def _setPIDAnglesSpeedOutput(self, output):
         
-        #angle X
-        #Moving the drone along Y-direction makes it turning on X-axis 
-        #Caution! Angle around X-axis as positive sense means moving backwards
-        #self._driver.shiftY(-output[0])
-        
-        #angle Y
-        #Moving the drone along X-direction makes it turning on Y-axis
-        #self._driver.shiftX(output[1])
-        
-        #angle Z
+        #angle-speed Z
         self._driver.spin(output[2])
         
         logging.debug("PID-angles-speed output: {0}".format(output))
@@ -136,13 +127,7 @@ class FlightController(object):
 
 
     def _setPIDAnglesOutput(self, output):
-        
-        #angle X        
-        #self._pid.setTarget(output[0], 0)
-        
-        #angle Y
-        #self._pid.setTarget(output[1], 1)
-
+       
         #angle X
         #Moving the drone along Y-direction makes it turning on X-axis 
         #Caution! Angle around X-axis as positive sense means moving backwards
@@ -245,8 +230,7 @@ class FlightController(object):
             
             time.sleep(FlightController.PID_PERIOD)            
             self._sensor.refreshState()
-            #Thread(target=self._doFlightDetection).start()
-
+            
             self._pid.start()
             
     
@@ -325,42 +309,10 @@ class FlightController(object):
         
         state._throttles = self._driver.getThrottles()
         state._angles = [0.0]*3
-        state._accels = [0.0]*3
-        #TODO: Removed due to sensor error measurement
-        #state._angles = self._sensor.readDeviceAngles()
-        #state._angles[2] = self._sensor.readAngleSpeeds()[2]
-        #state._accels = self._sensor.readAccels()
+        state._accels = [0.0]*3    
+        state._angles = self._sensor.readDeviceAngles()
+        state._angles[2] = self._sensor.readAngleSpeeds()[2]
+        state._accels = self._sensor.readAccels()
         
         return state
-    
-    
-    def _doFlightDetection(self):
-        
-        for index in range(3):
-            self.alterPidAnglesSpeedConstants(index, 0.0, 0.0, 0.0)
-            
-        for index in range(2):
-            self.alterPidAnglesConstants(index, 0.0, 0.0, 0.0)
-        
-        self._pid.disableIntegrals()
-        
-        maxError = self._sensor.getMaxErrorZ()      
-        accelZ = self._sensor.readAccels()[2]
-        while self._isRunning and accelZ < maxError: 
-            accelZ = self._sensor.readAccels()[2]
-            time.sleep(FlightController.PID_PERIOD)
-        
-        if self._isRunning:
-            message="Flight detected: accel-Z = {0:.3f}".format(accelZ)
-            logging.debug(message)
-            print message
-                
-            for index in range(3):
-                self.alterPidAnglesSpeedConstants(index, self._pidAnglesSpeedKP[index], self._pidAnglesSpeedKI[index], self._pidAnglesSpeedKD[index])
-                
-            for index in range(2):
-                self.alterPidAnglesConstants(index, self._pidAnglesKP[index], self._pidAnglesKI[index], self._pidAnglesKD[index])
-            
-            self._pid.enableIntegrals()
-        
     

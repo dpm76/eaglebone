@@ -24,7 +24,7 @@ class Cockpit(ttkFrame):
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
-    THROTTLE_BY_USER = False
+    THROTTLE_BY_USER = True
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121

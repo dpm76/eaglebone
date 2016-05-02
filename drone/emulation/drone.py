@@ -24,7 +24,7 @@ class EmulatedDrone(object):
     REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
     HANGED_MODE = False #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
     X_CONFIGURATON = False # Indicates whether the drone is configured as X or + 
-    PROPELLER_THRUST_RATE = 0.01 # 1.0kg @100%
+    PROPELLER_THRUST_RATE = 0.0065 # 0.65kg/propeller @100% (total x4 propellers: 2.6kg max. weight)
     PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
     WEIGHT = 1.8 # kg
     MAX_CRASH_SPEED = -1.0 #m/s
@@ -53,7 +53,7 @@ class EmulatedDrone(object):
             self._state._angles = [0.0, 0.0, -45.0]
 
         if EmulatedDrone.HANGED_MODE:
-            self._state._coords = [0.0, 0.0, 1.0]
+            self._state._coords = [0.0, 0.0, 1.0]            
             
         self._weight = EmulatedDrone.WEIGHT        
         self._armLength = EmulatedDrone.ARM_LENGTH        
@@ -152,11 +152,11 @@ class EmulatedDrone(object):
                 previousAngleSpeedY = self._state._angleSpeeds[1]
                 self._state._angleSpeeds[1] += accelAxisY * dt * self._arcSpeedToAngleSpeed            
     
-                #Calculate drone's angles (heading was already calculated)
+                #Calculate drone's angles (heading was already calculated)                
                 self._state._angles[0] += (self._state._angleSpeeds[0] + previousAngleSpeedX) * dt2
                 self._state._angles[0] = self._normalizeAngle(self._state._angles[0])
                 self._state._angles[1] += (self._state._angleSpeeds[1] + previousAngleSpeedY) * dt2
-                self._state._angles[1] = self._normalizeAngle(self._state._angles[1])                         
+                self._state._angles[1] = self._normalizeAngle(self._state._angles[1])                                         
     
             #Update propeller angles
             for propeller in self._propellers:
