@@ -710,6 +710,7 @@ class Cockpit(ttkFrame):
     def _onDroneStateRead(self, state):
         
         if state:
+            
             for index in range(4):
                 self._throttleTexts[index].set("{0:.3f}".format(state["_throttles"][index]))
                 
