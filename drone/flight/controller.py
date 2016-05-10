@@ -198,15 +198,15 @@ class FlightController(object):
         self._pid.setTarget(targets[3], 7) #accel Z
         
      
-    def enableIntegrals(self):
-
-        self._pid.enableIntegrals()
-        
-        
-    def disableIntegrals(self):
-
-        self._pid.disableIntegrals()
-               
+#     def enableIntegrals(self):
+# 
+#         self._pid.enableIntegrals()
+#         
+#         
+#     def disableIntegrals(self):
+# 
+#         self._pid.disableIntegrals()
+#                
 
     def start(self):
         

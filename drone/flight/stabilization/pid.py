@@ -44,7 +44,7 @@ class PID(object):
         
         self._length = length
         
-        self._integralsEnabled = True
+#         self._integralsEnabled = True
         
         self._deltaTimeSum = 0.0
         self._iterationCount = 0
@@ -62,11 +62,11 @@ class PID(object):
             
             error = self._targets[i] - currentValues[i]
             
-            if self._integralsEnabled:
-                self._integrals[i] += error * dt
-            else:
-                self._integrals[i] = 0.0
-                        
+            #if self._integralsEnabled:
+            self._integrals[i] += error * dt
+#             else:
+#                 self._integrals[i] = 0.0
+#                         
             result = \
                 self._kp[i] * error \
                 + self._ki[i] * self._integrals[i] \
@@ -127,7 +127,7 @@ class PID(object):
                 maxFreq = 1.0/calculationTime
                 message="This machine cannot operate at {0:.0f}Hz. Max @{1:.3f}Hz".format(freq, maxFreq)
                 print message
-                logging.error(message)
+                logging.warn(message)
                 time.sleep(0.001)
 
         if dtSum != 0.0 and iterCount != 0:
@@ -177,13 +177,13 @@ class PID(object):
             logging.info(message)
                 
     
-    def disableIntegrals(self):
-        
-        self._integralsEnabled = False
-        
-        
-    def enableIntegrals(self):
-        
-        self._integralsEnabled = True
+#     def disableIntegrals(self):
+#         
+#         self._integralsEnabled = False
+#         
+#         
+#     def enableIntegrals(self):
+#         
+#         self._integralsEnabled = True
        
     
