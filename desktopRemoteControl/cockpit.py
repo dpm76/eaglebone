@@ -195,9 +195,15 @@ class Cockpit(ttkFrame):
             Entry(infoFrame, textvariable=self._speedTexts[index], state=DISABLED, width=5).grid(column=index, row=8)
         
         #Height
-        Label(infoFrame, text="Height").grid(column=0, row=9, sticky="W")
+        Label(infoFrame, text="Height").grid(column=0, row=9, sticky="E")
         self._heightText = StringVar()
-        Entry(infoFrame, state=DISABLED, width=5).grid(column=1, row=9)
+        Entry(infoFrame, textvariable=self._heightText, state=DISABLED, width=5).grid(column=1, row=9)
+        
+        #Loop rate
+        Label(infoFrame, text="Loop @").grid(column=0, row=10, sticky="E")
+        self._loopRateText = StringVar()
+        Entry(infoFrame, textvariable=self._loopRateText, state=DISABLED, width=5).grid(column=1, row=10)
+        Label(infoFrame, text="Hz").grid(column=2, row=10, sticky="W")
         
         #control
         
@@ -717,6 +723,15 @@ class Cockpit(ttkFrame):
             for index in range(3):
                 self._accelTexts[index].set("{0:.3f}".format(state["_accels"][index]))
                 self._angleTexts[index].set("{0:.3f}".format(state["_angles"][index]))
+                
+            currentPeriod = state["_currentPeriod"]
+            if currentPeriod > 0.0:
+                
+                freq = 1.0/currentPeriod                
+                self._loopRateText.set("{0:.3f}".format(freq))
+                
+            else:
+                self._loopRateText.set("--")
                 
         else:
             self._stopUpdateInfoThread()

@@ -20,4 +20,5 @@ class State(object):
         _accels = [0.0]*3
         _speeds = [0.0]*3
         _height = 0.0
+        _currentPeriod = 0.0
         

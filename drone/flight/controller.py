@@ -311,6 +311,7 @@ class FlightController(object):
         state._angles = self._sensor.readDeviceAngles()
         state._angles[2] = self._sensor.readAngleSpeeds()[2]
         state._accels = self._sensor.readAccels()
+        state._currentPeriod = self._pid.getCurrentPeriod()
         
         return state
     
