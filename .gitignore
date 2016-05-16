@@ -1,4 +1,5 @@
 /drone.config.json
+/sensor-calibration.json
 *.pyc
 *.log
 .metadata
