@@ -24,7 +24,7 @@ class Cockpit(ttkFrame):
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
-    THROTTLE_BY_USER = False
+    THROTTLE_BY_USER = True
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
@@ -41,10 +41,6 @@ class Cockpit(ttkFrame):
     DIR_VERTICAL = 1
     DIR_HORIZONTAL = 2
     
-    MAX_ACCEL = 10.0 #TODO currently angles. Replace by m/s² later
-    MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
-    MAX_ANGLE_SPEED = 20.0 #º/s
-
     def __init__(self, parent, isDummy = False, droneIp = DEFAULT_DRONE_IP, dronePort = DEFAULT_DRONE_PORT):
         '''
         Constructor
@@ -243,10 +239,10 @@ class Cockpit(ttkFrame):
         self._shiftCanvas.bind("<B3-Motion>", self._onMouseButton3Motion)
 
         self._shiftCanvas.grid(row=0,column=1, padx=2, pady=2)
-        self._shiftCanvas.create_oval(2, 2, 400, 400, outline="#ff0000")
-        self._shiftCanvas.create_line(201, 2, 201, 400, fill="#ff0000")
-        self._shiftCanvas.create_line(2, 201, 400, 201, fill="#ff0000")
-        self._shiftMarker = self._shiftCanvas.create_oval(197, 197, 205, 205, outline="#0000ff", fill="#0000ff")
+        self._shiftCanvas.create_oval(1, 1, 400, 400, outline="#ff0000")
+        self._shiftCanvas.create_line(200, 2, 200, 400, fill="#ff0000")
+        self._shiftCanvas.create_line(2, 200, 400, 200, fill="#ff0000")
+        self._shiftMarker = self._shiftCanvas.create_oval(196, 196, 204, 204, outline="#0000ff", fill="#0000ff")
         
         self._yaw = DoubleVar()
         self._yawScale = Scale(controlFrame, orient=HORIZONTAL, from_=-100.0, to=100.0, \
@@ -333,15 +329,15 @@ class Cockpit(ttkFrame):
         markerCoords = self._shiftCanvas.coords(self._shiftMarker)
         coords = ((markerCoords[0] + markerCoords[2]) / 2, (markerCoords[1] + markerCoords[3]) / 2)
         
-        self._target[1] = float(coords[0] - 201) * Cockpit.MAX_ACCEL / 200.0
-        self._target[0] = float(coords[1] - 201) * Cockpit.MAX_ACCEL / 200.0      
+        self._target[0] = float(coords[1] - 200) / 2.0
+        self._target[1] = float(coords[0] - 200) / 2.0               
         #Remote control uses clockwise angle, but the drone's referece system uses counter-clockwise angle
-        self._target[2] = -self._yaw.get() * Cockpit.MAX_ANGLE_SPEED / 100.0
+        self._target[2] = -self._yaw.get()
         
         if Cockpit.THROTTLE_BY_USER:
             self._target[3] = 0.0
         else:        
-            self._target[3] = self._throttle.get() * Cockpit.MAX_ACCEL_Z / 100.0
+            self._target[3] = self._throttle.get()
         
         self._sendTarget() 
     
@@ -408,26 +404,29 @@ class Cockpit(ttkFrame):
         
     def _onMouseButtonRelease1(self, eventArgs):
 
-        self._shiftCanvas.coords(self._shiftMarker, 197, 197, 205, 205)
+        self._shiftCanvas.coords(self._shiftMarker, 196, 196, 204, 204)
 
     
-    def _limitCoordsToSize(self, coords, size):
+    def _limitCoordsToSize(self, coords, size, width):
         
-        if coords[0] > size:
-            x = size
+        maxSize = size-(width/2.0)
+        minSize = -(width/2.0)
         
-        elif coords[0] < 0:
-            x = 0
+        if coords[0] > maxSize:
+            x = maxSize
+        
+        elif coords[0] < minSize:
+            x = minSize
             
         else:
             x = coords[0]
             
             
-        if coords[1] > size:
-            y = size
+        if coords[1] > maxSize:
+            y = maxSize
             
-        elif coords[1] < 0:
-            y = 0
+        elif coords[1] < minSize:
+            y = minSize
             
         else:
             y = coords[1]
@@ -440,7 +439,7 @@ class Cockpit(ttkFrame):
 
         lastCoords = self._shiftCanvas.coords(self._shiftMarker)
         newCoords = (lastCoords[0] + shift[0], lastCoords[1] + shift[1])        
-        newCoords = self._limitCoordsToSize(newCoords, 400)
+        newCoords = self._limitCoordsToSize(newCoords, 400, 8)
     
         self._shiftCanvas.coords(self._shiftMarker, newCoords[0], newCoords[1], newCoords[0] + 8, newCoords[1] + 8)
         self._updateTarget()
@@ -448,7 +447,7 @@ class Cockpit(ttkFrame):
     
     def _resetShiftCanvasMarker(self):
     
-        self._shiftCanvas.coords(self._shiftMarker, 197, 197, 205, 205)
+        self._shiftCanvas.coords(self._shiftMarker, 196, 196, 204, 204)
         self._updateTarget()
         
     
@@ -472,7 +471,7 @@ class Cockpit(ttkFrame):
         
     def _onMouseButtonRelease3(self, eventArgs):
 
-        self._shiftCanvas.coords(self._shiftMarker, 197, 197, 205, 205)
+        self._shiftCanvas.coords(self._shiftMarker, 196, 196, 204, 204)
 
         
     def _onMouseButton3Motion(self, eventArgs):
