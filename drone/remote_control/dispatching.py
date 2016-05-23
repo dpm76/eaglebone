@@ -18,6 +18,10 @@ from flight.controller import FlightController
 
 class Dispatcher(StreamRequestHandler):
 
+    MAX_ANGLE = 10.0 #TODO currently angles. Replace by acceleration (m/s²) later
+    MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
+    MAX_ANGLE_SPEED = 20.0 #º/s for yaw
+
     def setup(self):
         
         StreamRequestHandler.setup(self)
@@ -72,7 +76,12 @@ class Dispatcher(StreamRequestHandler):
         
         if self._started and message["key"] == "target":
             
-            newTargets = message["data"]
+            controlData = message["data"]
+            newTargets = [controlData[0] * Dispatcher.MAX_ANGLE / 100.0,
+                          controlData[1] * Dispatcher.MAX_ANGLE / 100.0,
+                          controlData[2] * Dispatcher.MAX_ANGLE_SPEED / 100.0,
+                          controlData[3] * Dispatcher.MAX_ACCEL_Z / 100.0]            
+            
             self._controller.setTargets(newTargets)
             
         elif self._started and message["key"] == "throttle":
