@@ -16,15 +16,19 @@ from ttk import Style, Frame as ttkFrame, Button
 from communications.console import ConsoleLink
 from communications.inet import INetLink
 from config import Configuration
+from device.manager import JoystickManager
 
 
 class Cockpit(ttkFrame):
     '''
-    Remote controller GUI 
+    Remote device GUI 
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
     THROTTLE_BY_USER = True
+    
+    # Joystick enabled or not, if any
+    JOYSTICK_ENABLED = True 
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
@@ -47,8 +51,6 @@ class Cockpit(ttkFrame):
         '''
         ttkFrame.__init__(self, parent)
         
-        self._started = IntVar()
-#         self._integralsEnabled = IntVar()
         self._target = [0.0] * 4        
         
         self._selectedPidConstats = "--"
@@ -144,6 +146,7 @@ class Cockpit(ttkFrame):
         commandsFrame = tkFrame(self)
         commandsFrame.grid(column=0, row=0, sticky="WE")
         
+        self._started = IntVar()
         self._startedCB = Checkbutton(commandsFrame, text="On", variable=self._started, command=self._startedCBChanged)
         self._startedCB.pack(side=LEFT, padx=4)
         
@@ -312,6 +315,71 @@ class Cockpit(ttkFrame):
 
         self._readDroneConfig()
         
+        if Cockpit.JOYSTICK_ENABLED:
+            self._joystickManager = JoystickManager.getInstance()
+            self._joystickManager.start()
+            
+            joysticks = self._joystickManager.getJoysticks()
+            if len(joysticks) != 0:
+                self._joystick = joysticks[0]
+                self._joystick.onAxisChanged += self._onJoystickAxisChanged
+                self._joystick.onButtonPressed += self._onJoystickButtonPressed
+            else:
+                self._joystick = None     
+        
+        
+    def _onJoystickAxisChanged(self, sender, index):
+        
+        if self._started.get() and sender == self._joystick:
+            
+            axisValue = self._joystick.getAxisValue(index) 
+            
+            if index == 0:
+                
+                self._yaw.set(axisValue)
+                self._updateTarget()
+            
+            elif index == 1 and not Cockpit.THROTTLE_BY_USER:
+            
+                thrust = -axisValue
+                self._throttle.set(thrust)            
+                self._updateTarget()
+
+            elif index == 2 and Cockpit.THROTTLE_BY_USER:            
+            
+                throttle = (axisValue + 100.0)/2.0 
+                self._throttle.set(throttle)
+                self._sendThrottle()
+                
+            elif index == 3:
+                
+                x = 196 + axisValue * 2                
+                lastCoords = self._shiftCanvas.coords(self._shiftMarker)
+                coords = (x, lastCoords[1])                 
+                self._plotShiftCanvasMarker(coords)
+                
+            elif index == 4:
+                
+                y = 196 + axisValue * 2 
+                lastCoords = self._shiftCanvas.coords(self._shiftMarker)
+                coords = (lastCoords[0], y)                 
+                self._plotShiftCanvasMarker(coords)
+
+
+    def _onJoystickButtonPressed(self, sender, index):
+        
+        if sender == self._joystick and index == 7:
+            
+            if self._started.get() == 0:
+                self._startedCB.select()
+            else:
+                self._startedCB.deselect()
+                
+            # Tkinter's widgets seem not to be calling the event-handler
+            # when they are changed programmatically. Therefore, the 
+            # even-handler is called explicitly here.
+            self._startedCBChanged()
+        
     
     def exit(self):
         
@@ -321,6 +389,9 @@ class Cockpit(ttkFrame):
         
         self._link.close()
 
+        if Cockpit.JOYSTICK_ENABLED:
+            self._joystickManager.stop()
+        
         self.quit()
 
 
@@ -329,11 +400,12 @@ class Cockpit(ttkFrame):
         markerCoords = self._shiftCanvas.coords(self._shiftMarker)
         coords = ((markerCoords[0] + markerCoords[2]) / 2, (markerCoords[1] + markerCoords[3]) / 2)
         
-        self._target[0] = float(coords[1] - 200) / 2.0
-        self._target[1] = float(coords[0] - 200) / 2.0               
+        self._target[0] = float(coords[1] - 200) / 2.0 # X-axis angle / X-axis acceleration
+        self._target[1] = float(coords[0] - 200) / 2.0 # Y-axis angle / Y-axis acceleration
         #Remote control uses clockwise angle, but the drone's referece system uses counter-clockwise angle
-        self._target[2] = -self._yaw.get()
+        self._target[2] = -self._yaw.get() # Z-axis angular speed
         
+        # Z-axis acceleration (thrust). Only when the motor throttle is not controlled by user directly
         if Cockpit.THROTTLE_BY_USER:
             self._target[3] = 0.0
         else:        
@@ -435,14 +507,18 @@ class Cockpit(ttkFrame):
         return (x,y)
     
     
+    def _plotShiftCanvasMarker(self, coords):
+        
+        coords = self._limitCoordsToSize(coords, 400, 8)
+        self._shiftCanvas.coords(self._shiftMarker, coords[0], coords[1], coords[0] + 8, coords[1] + 8)
+        self._updateTarget()
+
+    
     def _moveShiftCanvasMarker(self, shift):
 
         lastCoords = self._shiftCanvas.coords(self._shiftMarker)
         newCoords = (lastCoords[0] + shift[0], lastCoords[1] + shift[1])        
-        newCoords = self._limitCoordsToSize(newCoords, 400, 8)
-    
-        self._shiftCanvas.coords(self._shiftMarker, newCoords[0], newCoords[1], newCoords[0] + 8, newCoords[1] + 8)
-        self._updateTarget()
+        self._plotShiftCanvasMarker(newCoords)
     
     
     def _resetShiftCanvasMarker(self):
@@ -495,6 +571,7 @@ class Cockpit(ttkFrame):
     
     def _thrustScaleUp(self):
 
+        #TODO: 20160526 DPM: El valor de incremento de aceleración (1.0) puede ser muy alto
         if self._started.get(): 
             newValue = self._thrustScale.get() \
                 + (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
@@ -505,6 +582,7 @@ class Cockpit(ttkFrame):
     
     def _thrustScaleDown(self):
         
+        #TODO: 20160526 DPM: El valor de decremento de aceleración (1.0) puede ser muy alto
         if self._started.get():
             newValue = self._thrustScale.get() \
                 - (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)

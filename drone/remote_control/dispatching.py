@@ -18,8 +18,8 @@ from flight.controller import FlightController
 
 class Dispatcher(StreamRequestHandler):
 
-    MAX_ANGLE = 10.0 #TODO currently angles. Replace by acceleration (m/s²) later
-    MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
+    MAX_ANGLE = 2.0 #TODO currently angles. Replace by acceleration (m/s²) later
+    MAX_ACCEL_Z = 0.5 #m/s² steps of 0.005 m/s²
     MAX_ANGLE_SPEED = 20.0 #º/s for yaw
 
     def setup(self):

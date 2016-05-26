@@ -36,7 +36,7 @@ try:
                 
                 if len(command) == 3:
                     angle = radians(float(command[1]))
-                    controller.shift(angle, float(command[2]))
+                    device.shift(angle, float(command[2]))
                 else:
                     print "Shift: SH degrees-angle inc-percentage"
             '''        
@@ -45,7 +45,7 @@ try:
                 
                 if len(command) == 2:
                     increment = float(command[1])
-                    controller.spin(increment)
+                    device.spin(increment)
                 else:
                     print "Spin: SP inc-percentage"
             '''                

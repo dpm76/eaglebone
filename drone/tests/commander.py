@@ -55,7 +55,7 @@ try:
                 
                 if len(command) == 2:
                     increment = float(command[1])
-                    controller.spin(increment)
+                    device.spin(increment)
                 else:
                     print "Spin: SP inc-percentage"
             '''
