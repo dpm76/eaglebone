@@ -60,13 +60,19 @@ class Joystick(object):
     
     def getAllAxisValues(self):
         
-        return [value * 100.0 for value in self._axes]
+        return [Joystick._calculateAxisValue(value) for value in self._axes]
     
     
     def getAxisValue(self, index):
         
-        return self._axes[index] * 100.0
+        return Joystick._calculateAxisValue(self._axes[index])
     
+    
+    @staticmethod
+    def _calculateAxisValue(rawValue):
+        
+        return rawValue * rawValue * rawValue * 100.0
+        
     
     def _setButtonValue(self, index, value):
         

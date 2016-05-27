@@ -25,7 +25,7 @@ class Cockpit(ttkFrame):
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
-    THROTTLE_BY_USER = True
+    THROTTLE_BY_USER = False
     
     # Joystick enabled or not, if any
     JOYSTICK_ENABLED = True 
