@@ -5,7 +5,11 @@ Created on 22 de may. de 2016
 '''
 from contextlib import contextmanager
 import os
-import pygame
+try:
+    import pygame
+    _pygameLoaded = True
+except:
+    _pygameLoaded = False
 import sys
 from threading import Thread
 from time import sleep
@@ -54,7 +58,7 @@ class JoystickManager(object):
 
     def start(self):
         
-        if self._pollingThread == None or not self._pollingThread.isAlive():
+        if _pygameLoaded and (self._pollingThread == None or not self._pollingThread.isAlive()):
             
             # Initialize the joysticks
             pygame.init()
@@ -90,8 +94,8 @@ class JoystickManager(object):
         if self._pollingThread != None and self._pollingThread.isAlive():            
             self._pollingThread.join()            
             
-        self.onStop.fire(self)            
-        pygame.quit()
+            self.onStop.fire(self)            
+            pygame.quit()
 
 
     def getJoysticks(self):
