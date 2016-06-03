@@ -25,10 +25,10 @@ class Cockpit(ttkFrame):
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
-    THROTTLE_BY_USER = False
+    THROTTLE_BY_USER = True
     
     # Joystick enabled or not, if any
-    JOYSTICK_ENABLED = True 
+    JOYSTICK_ENABLED = False 
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
