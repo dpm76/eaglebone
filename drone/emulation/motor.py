@@ -6,6 +6,7 @@ Created on 7 de feb. de 2016
 @author: david
 '''
 from emulation.drone import EmulatedDrone
+import logging
 
 
 class EmulatedMotor(object):
@@ -25,6 +26,7 @@ class EmulatedMotor(object):
         
         self._throttle = 0.0
         self._propeller = EmulatedDrone.getInstance().getPropeller(motorId)        
+        self._motorId = motorId
         
         
     def start(self):
@@ -72,6 +74,8 @@ class EmulatedMotor(object):
         """
 
         self.setThrottle(100.0)
+
+        logging.debug("motor-{0}: setMaxThrottle".format(self._motorId))
         
         
     def setMinThrottle(self):
@@ -80,6 +84,8 @@ class EmulatedMotor(object):
         """
         
         self.setThrottle(0.0)
+
+        logging.debug("motor-{0}: setMinThrottle".format(self._motorId))
         
         
     def standBy(self):
@@ -87,8 +93,8 @@ class EmulatedMotor(object):
         Set the motor in stand-by state
         """
         
-        self.setMinThrottle()        
-        
+        self.setMinThrottle()
+
         
     def idle(self):
         """
@@ -96,6 +102,8 @@ class EmulatedMotor(object):
         """
         
         self.setThrottle(0.0)
+
+        logging.debug("motor-{0}: idle".format(self._motorId))
         
         
     def stop(self):
@@ -104,3 +112,5 @@ class EmulatedMotor(object):
         """
         
         self.setThrottle(0.0)
+
+        logging.debug("motor-{0}: stop".format(self._motorId))
