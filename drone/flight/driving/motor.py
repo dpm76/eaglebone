@@ -20,7 +20,7 @@ class Motor(object):
     KEY_PWM_ID = "pwmId"
     KEY_PIN_ID = "pinId" 
     
-    #BeagleBone (white) config.
+    #BeagleBone's config.
     #TODO 20150408 DPM - Include this configuration in such a settings file
     _pins = [{KEY_PWM_ID: 6, KEY_PIN_ID: "P8.13"},
              {KEY_PWM_ID: 5, KEY_PIN_ID: "P8.19"},
