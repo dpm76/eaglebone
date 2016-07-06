@@ -24,9 +24,9 @@ class EmulatedDrone(object):
     REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
     HANGED_MODE = False #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
     X_CONFIGURATON = False # Indicates whether the drone is configured as X or + 
-    PROPELLER_THRUST_RATE = 0.0065 # 0.65kg/propeller @100% (total x4 propellers: 2.6kg max. weight)
+    PROPELLER_THRUST_RATE = 0.0075 # 0.75kg/propeller @100% (total x4 propellers: 3.0kg max. thrust)
     PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
-    WEIGHT = 1.8 # kg
+    WEIGHT = 1.6 # kg
     MAX_CRASH_SPEED = -1.0 #m/s
     ARM_LENGTH = 0.23 #m    
     #end config

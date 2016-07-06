@@ -14,9 +14,10 @@ class Propeller(object):
     Represents the drone's propeller
     '''
     
-    GRAVITY = 9.807 #m/s²
-    
+    THROTTLE_THRESHOLD = 10.0 #Below this threshold the motor cannot move the propeller
     LPF = 0.9 #Low-pass filter threshold
+    
+    GRAVITY = 9.807 #m/s²
     
     ROTATION_CW = 0
     ROTATION_CCW = 1
@@ -104,7 +105,10 @@ class Propeller(object):
     
     def _update(self):
 
-        newThrustModule = self._throttle * self._throttleThrustRate * Propeller.GRAVITY
+        effectiveThrottle = self._throttle - Propeller.THROTTLE_THRESHOLD \
+            if self._throttle > Propeller.THROTTLE_THRESHOLD else 0.0        
+
+        newThrustModule = effectiveThrottle * self._throttleThrustRate * Propeller.GRAVITY
         self._thrustModule += self._lowPassFilter * (newThrustModule - self._thrustModule) 
         self._thrust = Vector.rotateVector3D([0.0, 0.0, self._thrustModule], self._angles)
         self._thrust[2] -= Propeller.GRAVITY * self._thrustedWeight
