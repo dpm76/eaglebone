@@ -28,12 +28,14 @@ class Cockpit(ttkFrame):
     THROTTLE_BY_USER = True
     
     # Joystick enabled or not, if any
-    JOYSTICK_ENABLED = False 
+    JOYSTICK_ENABLED = True 
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
     #---
     
+    SYSTEM_LINUX = 0
+    SYSTEM_WINDOWS = 1
 
     KEY_ANG_SPEED = "ang-speed"
     KEY_ANGLES = "angles"
@@ -104,6 +106,8 @@ class Cockpit(ttkFrame):
                               }
         
         self.parent = parent
+        
+        self._systemType = Cockpit.SYSTEM_LINUX if system() == "Linux" else Cockpit.SYSTEM_WINDOWS
 
         self.initUI()
 
@@ -134,7 +138,7 @@ class Cockpit(ttkFrame):
         self.parent.bind_all("<Key>", self._keyDown)
         self.parent.bind_all("<KeyRelease>", self._keyUp)
 
-        if system() == "Linux":
+        if self._systemType == Cockpit.SYSTEM_LINUX:
             self.parent.bind_all("<Button-4>", self._onMouseWheelUp)
             self.parent.bind_all("<Button-5>", self._onMouseWheelDown)
 
@@ -347,18 +351,21 @@ class Cockpit(ttkFrame):
 
             elif index == 2 and Cockpit.THROTTLE_BY_USER:            
             
-                throttle = (axisValue + 100.0)/2.0 
+                #throttle = (axisValue + 100.0)/2.0 
+                throttle = axisValue * 2.0
                 self._throttle.set(throttle)
                 self._sendThrottle()
                 
-            elif index == 3:
+            elif (index == 3 and self._systemType == Cockpit.SYSTEM_LINUX) \
+                or (index == 4 and self._systemType == Cockpit.SYSTEM_WINDOWS):
                 
                 x = 196 + axisValue * 2                
                 lastCoords = self._shiftCanvas.coords(self._shiftMarker)
                 coords = (x, lastCoords[1])                 
                 self._plotShiftCanvasMarker(coords)
                 
-            elif index == 4:
+            elif (index == 4 and self._systemType == Cockpit.SYSTEM_LINUX) \
+                or (index == 3 and self._systemType == Cockpit.SYSTEM_WINDOWS):
                 
                 y = 196 + axisValue * 2 
                 lastCoords = self._shiftCanvas.coords(self._shiftMarker)

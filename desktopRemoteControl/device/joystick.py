@@ -10,6 +10,9 @@ class Joystick(object):
     '''
     Throws events depending the user behavior
     '''
+    
+    #Below this threshold, the axis value is zero. 
+    AXIS_ZERO_THRESHOLD = 1.0
 
     def __init__(self, name, index, numAxes, numButtons, numHats):
     
@@ -71,7 +74,11 @@ class Joystick(object):
     @staticmethod
     def _calculateAxisValue(rawValue):
         
-        return rawValue * rawValue * rawValue * 100.0
+        axisValue = rawValue * rawValue * rawValue * 100.0
+        if axisValue < Joystick.AXIS_ZERO_THRESHOLD and axisValue > -Joystick.AXIS_ZERO_THRESHOLD:
+            axisValue = 0.0
+            
+        return axisValue                  
         
     
     def _setButtonValue(self, index, value):
