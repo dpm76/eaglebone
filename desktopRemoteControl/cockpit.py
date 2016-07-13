@@ -25,14 +25,15 @@ class Cockpit(ttkFrame):
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
-    THROTTLE_BY_USER = True
+    #--- config
+    THROTTLE_BY_USER = False
     
     # Joystick enabled or not, if any
     JOYSTICK_ENABLED = True 
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
-    #---
+    #--- end config
     
     SYSTEM_LINUX = 0
     SYSTEM_WINDOWS = 1
@@ -351,7 +352,6 @@ class Cockpit(ttkFrame):
 
             elif index == 2 and Cockpit.THROTTLE_BY_USER:            
             
-                #throttle = (axisValue + 100.0)/2.0 
                 throttle = axisValue * 2.0
                 self._throttle.set(throttle)
                 self._sendThrottle()
