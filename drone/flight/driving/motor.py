@@ -29,7 +29,7 @@ class Motor(object):
     
     PERIOD = 20000000 #nanoseconds = 50Hz
     
-    MIN_DUTY = 900000 #nanoseconds    
+    MIN_DUTY = 1000000 #nanoseconds    
     MAX_DUTY = 2000000 #nanoseconds
     
     RANGE_DUTY = (MAX_DUTY - MIN_DUTY) / 100.0
