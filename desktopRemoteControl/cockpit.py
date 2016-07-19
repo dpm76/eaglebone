@@ -26,10 +26,13 @@ class Cockpit(ttkFrame):
     
     #TODO: 20160415 DPM - Set these values from configuration file
     #--- config
-    THROTTLE_BY_USER = False
+    THROTTLE_BY_USER = True
     
     # Joystick enabled or not, if any
-    JOYSTICK_ENABLED = True 
+    JOYSTICK_ENABLED = False 
+    
+    # When THROTTLE_BY_USER is true and JOYSTICK_ENABLED is true, this is the rate of throttle change       
+    THROTTLE_STEP_RATE = 0.15
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
@@ -124,6 +127,9 @@ class Cockpit(ttkFrame):
         self._updateInfoThread = Thread(target=self._updateInfo)
         self._updateInfoThreadRunning = False
         self._readingState = False
+
+        self._refreshThrottleThread = None
+        self._throttleFactor = 0.0
 
         self._start()
         
@@ -350,11 +356,9 @@ class Cockpit(ttkFrame):
                 self._throttle.set(thrust)            
                 self._updateTarget()
 
-            elif index == 2 and Cockpit.THROTTLE_BY_USER:            
+            elif index == 1 and Cockpit.THROTTLE_BY_USER:            
             
-                throttle = axisValue * 2.0
-                self._throttle.set(throttle)
-                self._sendThrottle()
+                self._throttleFactor = -axisValue
                 
             elif (index == 3 and self._systemType == Cockpit.SYSTEM_LINUX) \
                 or (index == 4 and self._systemType == Cockpit.SYSTEM_WINDOWS):
@@ -687,10 +691,14 @@ class Cockpit(ttkFrame):
             self._thrustScale.config(state=DISABLED)            
             #self._integralsCB.config(state=DISABLED)
             self._stopUpdateInfoThread()
+            if Cockpit.THROTTLE_BY_USER and Cockpit.JOYSTICK_ENABLED:
+                self._stopRefreshThrottleThread()
         else:
             self._thrustScale.config(state="normal")            
             #self._integralsCB.config(state="normal")
             self._startUpdateInfoThread()
+            if Cockpit.THROTTLE_BY_USER and Cockpit.JOYSTICK_ENABLED:
+                self._startRefreshThrottleThread()
             
         self._sendIsStarted()
      
@@ -900,4 +908,41 @@ class Cockpit(ttkFrame):
         self._updateInfoThreadRunning = False
         if self._updateInfoThread.isAlive():
             self._updateInfoThread.join()
+            
+    
+    def _startRefreshThrottleThread(self):
+        
+        if self._refreshThrottleThread == None or not self._refreshThrottleThread.isAlive():
+            
+            self._refreshThrottleThreadRunning = True
+        
+            self._refreshThrottleThread = Thread(target=self._refreshThrottle)
+            self._refreshThrottleThread.start()
+            
+            
+    def _stopRefreshThrottleThread(self):
+        
+        if self._refreshThrottleThread != None and self._refreshThrottleThread.isAlive():
+            self._refreshThrottleThreadRunning = False
+            self._refreshThrottleThread.join()
+        
+    
+    def _refreshThrottle(self):
+        
+        throttle = 0.0
+        while self._refreshThrottleThreadRunning:
+            
+            if self._throttleFactor != 0.0:
+            
+                throttle += self._throttleFactor * Cockpit.THROTTLE_STEP_RATE
+                
+                if throttle > 100.0:
+                    throttle = 100.0
+                elif throttle < 0.0:
+                    throttle = 0.0
+            
+                self._throttle.set(throttle)
+                self._sendThrottle()
+
+            time.sleep(0.2)
     
