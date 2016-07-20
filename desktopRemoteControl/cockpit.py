@@ -29,7 +29,7 @@ class Cockpit(ttkFrame):
     THROTTLE_BY_USER = True
     
     # Joystick enabled or not, if any
-    JOYSTICK_ENABLED = False 
+    JOYSTICK_ENABLED = True 
     
     # When THROTTLE_BY_USER is true and JOYSTICK_ENABLED is true, this is the rate of throttle change       
     THROTTLE_STEP_RATE = 0.15
@@ -588,7 +588,7 @@ class Cockpit(ttkFrame):
                 + (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
-            self._updateTarget()
+            #self._updateTarget()
     
     
     def _thrustScaleDown(self):
@@ -599,7 +599,7 @@ class Cockpit(ttkFrame):
                 - (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
-            self._updateTarget()
+            #self._updateTarget()
             
     
     def _thrustReset(self):
@@ -930,6 +930,7 @@ class Cockpit(ttkFrame):
     def _refreshThrottle(self):
         
         throttle = 0.0
+        self._throttle.set(throttle)
         while self._refreshThrottleThreadRunning:
             
             if self._throttleFactor != 0.0:
@@ -942,7 +943,7 @@ class Cockpit(ttkFrame):
                     throttle = 0.0
             
                 self._throttle.set(throttle)
-                self._sendThrottle()
+                #self._sendThrottle()
 
             time.sleep(0.2)
     
