@@ -390,6 +390,15 @@ class Cockpit(ttkFrame):
             # when they are changed programmatically. Therefore, the 
             # even-handler is called explicitly here.
             self._startedCBChanged()
+            
+        if self._started.get() and sender == self._joystick:
+            
+            if index == 4 and Cockpit.THROTTLE_BY_USER:
+                
+                self._throttleFactor = 0.0
+                self._throttle.set(0.0)
+                self._sendThrottle()
+                
         
     
     def exit(self):
@@ -929,13 +938,12 @@ class Cockpit(ttkFrame):
     
     def _refreshThrottle(self):
         
-        throttle = 0.0
-        self._throttle.set(throttle)
+        self._throttle.set(0.0)
         while self._refreshThrottleThreadRunning:
             
             if self._throttleFactor != 0.0:
             
-                throttle += self._throttleFactor * Cockpit.THROTTLE_STEP_RATE
+                throttle = self._throttle.get() + self._throttleFactor * Cockpit.THROTTLE_STEP_RATE
                 
                 if throttle > 100.0:
                     throttle = 100.0
@@ -943,7 +951,7 @@ class Cockpit(ttkFrame):
                     throttle = 0.0
             
                 self._throttle.set(throttle)
-                #self._sendThrottle()
+                self._sendThrottle()
 
             time.sleep(0.2)
     
