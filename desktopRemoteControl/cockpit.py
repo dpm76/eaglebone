@@ -402,6 +402,10 @@ class Cockpit(ttkFrame):
         
     
     def exit(self):
+
+        if self._started.get() != 0:
+            self._startedCB.deselect()
+            self._startedCBChanged()
         
         self._link.send({"key": "close", "data": None})
         
@@ -437,11 +441,16 @@ class Cockpit(ttkFrame):
     def _keyDown(self, event):
 
         if event.keysym == "Escape":            
-            self._throttle.set(0)
-            self._started.set(0)
-            self._thrustScale.config(state=DISABLED)
-            self._stopUpdateInfoThread()
-            self._sendIsStarted()
+            self._throttle.set(0.0)
+            
+            if Cockpit.THROTTLE_BY_USER:
+                self._throttleFactor = 0.0
+                self._sendThrottle()
+            
+            #self._started.set(0)
+            #self._thrustScale.config(state=DISABLED)
+            #self._stopUpdateInfoThread()
+            #self._sendIsStarted()
             
         elif event.keysym.startswith("Control"):            
             self._controlKeyActive = True
@@ -697,6 +706,9 @@ class Cockpit(ttkFrame):
         
         if not self._started.get():
             self._throttle.set(0)
+            if Cockpit.THROTTLE_BY_USER:
+                self._throttleFactor = 0.0
+                self._sendThrottle()
             self._thrustScale.config(state=DISABLED)            
             #self._integralsCB.config(state=DISABLED)
             self._stopUpdateInfoThread()
