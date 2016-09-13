@@ -48,7 +48,7 @@ class PID(object):
         self._setOutput = setOutputDelegate
     
         self._isRunning = False
-        self._thread = Thread(target=self._do)
+        self._thread = None
         
         self._length = length
         
@@ -184,21 +184,27 @@ class PID(object):
     
     def start(self):
         
-        if not self._thread.isAlive():
+        if self._thread == None or not self._thread.isAlive():
             
             logging.info("Starting PID-\"{0}\"".format(self._pidName))
 
             self._deltaTimeSum = 0.0
             self._iterationCount = 0
             
+            #Reset PID variables
+            length = len(self._kp)
+            self._integrals = [0.0] * length
+            self._lastErrors = [0.0] * length
+            
             self._isRunning = True
+            self._thread = Thread(target=self._do)
             self._thread.start()
             
         
     def stop(self):
         
         self._isRunning = False        
-        if self._thread.isAlive():
+        if self._thread != None and self._thread.isAlive():
             
             self._thread.join()
             
@@ -216,6 +222,11 @@ class PID(object):
             print message
             logging.info(message)
                 
+    
+    def isRunning(self):
+        
+        return self._isRunning
+    
     
 #     def disableIntegrals(self):
 #         

@@ -21,12 +21,15 @@ class Dispatcher(StreamRequestHandler):
     MAX_ANGLE = 5.0 #TODO currently angles. Replace by acceleration (m/s²) later
     MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
     MAX_ANGLE_SPEED = 50.0 #º/s for yaw
+    
+    PID_THROTTLE_THRESHOLD = 15.0 #Threshold to activate or deactivate the PID
 
     def setup(self):
         
         StreamRequestHandler.setup(self)
         
         self._controller = FlightController.getInstance()
+        self._controller.setPidThrottleThreshold(Dispatcher.PID_THROTTLE_THRESHOLD)
         self._controller.start()
         
         self._throttleByUser = False
@@ -115,10 +118,8 @@ class Dispatcher(StreamRequestHandler):
             
             if self._started:
                 self._controller.standBy()
-                self._controller.startPid()
                     
             else:                
-                self._controller.stopPid()
                 self._controller.idle()                
 
 #         elif message["key"] == "integrals":

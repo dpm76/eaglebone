@@ -72,8 +72,8 @@ try:
         elif command0 == "-":
             controller.addThrottle(-1)
             
-        elif command0 == "P":
-            controller.startPid()
+#         elif command0 == "P":
+#             controller._startPid()
             
         elif command0 == "HELP" or command0 == "?":
             print "Commands list:"
@@ -83,7 +83,7 @@ try:
             #print "\tSP: Spin"
             print "\tSB: Stand-by"
             print "\tID: Idle"
-            print "\tP: starts PID"
+#             print "\tP: starts PID"
             print "\t+: Add 1% throttle"
             print "\t-: Reduce 1% throttle"
             

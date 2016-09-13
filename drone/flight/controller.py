@@ -65,10 +65,16 @@ class FlightController(object):
                         self._pidKP, self._pidKI, self._pidKD, \
                         self._readPIDInput, self._setPIDOutput, \
                         "stabilization-pid")
-        self._pid.setTargets([0.0]*len(self._pidKP))
-        
+        self._pid.setTargets([0.0]*len(self._pidKP))        
 
         self._isRunning = False
+        
+        self._pidThrottleThreshold = 0
+        
+        
+    def setPidThrottleThreshold(self, throttle):
+
+        self._pidThrottleThreshold = throttle
 
 
     def _createSensor(self, imuClass):
@@ -187,7 +193,24 @@ class FlightController(object):
     
     def addThrottle(self, increment):
         
+        throttle0 = self._driver.getBaseThrottle()
         self._driver.addThrottle(increment)
+        throttle1 = self._driver.getBaseThrottle()
+        
+        if throttle1 >= self._pidThrottleThreshold \
+            and throttle0 < self._pidThrottleThreshold:
+            
+            self._startPid()
+            
+        elif throttle1 < self._pidThrottleThreshold \
+            and throttle0 >= self._pidThrottleThreshold:
+            
+            self._stopPid()
+            self._driver.setThrottle(throttle1)
+        
+        if not self._pid.isRunning():
+            
+            self._driver.commitIncrements()
         
 
     def setTargets(self, targets):
@@ -219,7 +242,7 @@ class FlightController(object):
             self._driver.idle()        
     
         
-    def startPid(self):
+    def _startPid(self):
 
         if self._isRunning:
 
@@ -234,7 +257,7 @@ class FlightController(object):
             self._pid.start()
             
     
-    def stopPid(self):
+    def _stopPid(self):
         
         self._pid.stop()
         
@@ -247,8 +270,8 @@ class FlightController(object):
         if self._isRunning:
         
             self._isRunning = False
-                           
-            self.stopPid()
+            
+            self._stopPid()               
             self.idle()
             
             self._driver.stop()        
@@ -257,11 +280,13 @@ class FlightController(object):
         
     def standBy(self):
         
+        self._stopPid()
         self._driver.standBy()
     
 
     def idle(self):
         
+        self._stopPid()
         self._driver.idle()
         
     
@@ -307,7 +332,7 @@ class FlightController(object):
         
         state = State()
         
-        state._throttles = self._driver.getThrottles()          
+        state._throttles = self._driver.getThrottles()
         state._angles = self._sensor.readDeviceAngles()
         state._angles[2] = self._sensor.readAngleSpeeds()[2]
         state._accels = self._sensor.readAccels()
