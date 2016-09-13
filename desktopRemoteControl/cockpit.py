@@ -29,7 +29,7 @@ class Cockpit(ttkFrame):
     THROTTLE_BY_USER = True
     
     # Joystick enabled or not, if any
-    JOYSTICK_ENABLED = True 
+    JOYSTICK_ENABLED = False 
     
     # When THROTTLE_BY_USER is true and JOYSTICK_ENABLED is true, this is the rate of throttle change       
     THROTTLE_STEP_RATE = 0.05

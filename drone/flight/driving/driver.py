@@ -176,6 +176,18 @@ class Driver(object):
     def getThrottles(self):
         
         return [motor.getThrottle() for motor in self._motors]
+    
+    
+    def getBaseThrottle(self):
+        
+        return self._baseThrottle
+    
+    
+    def setThrottle(self, throttle):
 
+        with self._lock:
+            self._baseThrottle = throttle
+            for motor in self._motors:
+                motor.setThrottle(throttle)
 
             
