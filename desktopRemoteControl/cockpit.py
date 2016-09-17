@@ -29,10 +29,10 @@ class Cockpit(ttkFrame):
     THROTTLE_BY_USER = True
     
     # Joystick enabled or not, if any
-    JOYSTICK_ENABLED = False 
+    JOYSTICK_ENABLED = True 
     
     # When THROTTLE_BY_USER is true and JOYSTICK_ENABLED is true, this is the rate of throttle change       
-    THROTTLE_STEP_RATE = 0.05
+    THROTTLE_STEP_RATE = 0.1
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
