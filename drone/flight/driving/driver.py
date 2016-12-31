@@ -151,11 +151,11 @@ class Driver(object):
         
         with self._lock:
    
-            self._motorIncrements[0] += increment
-            self._motorIncrements[2] += increment
+            self._motorIncrements[0] += -increment
+            self._motorIncrements[2] += -increment
 
-            self._motorIncrements[1] += -increment
-            self._motorIncrements[3] += -increment
+            self._motorIncrements[1] += increment
+            self._motorIncrements[3] += increment
 
 
     def commitIncrements(self):

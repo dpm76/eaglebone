@@ -59,18 +59,26 @@ class EmulatedDrone(object):
         self._armLength = EmulatedDrone.ARM_LENGTH        
         self._arcSpeedToAngleSpeed = 180.0/PI*self._armLength
         
+        # Propellers and motor are configured as follows:
+        #
+        #               (4) ^ (1)
+        #                  \ /
+        #                   X
+        #                  / \
+        #               (3)   (2)
+        #
         if self._realisticFlight:
         
-            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.98, 1.01 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.97, 0.97 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.96, 0.99 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.99, 1.03 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
+            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.98, 1.01 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.97, 0.97 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.96, 0.99 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.99, 1.03 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
         else:
             
-            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
                                 Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
 
         self._propellersCount = len(self._propellers)
 
