@@ -26,20 +26,15 @@ class Cockpit(ttkFrame):
     
     #TODO: 20160415 DPM - Set these values from configuration file
     #--- config
-    THROTTLE_BY_USER = True
+    THROTTLE_BY_USER = False
     
     # Joystick enabled or not, if any
     JOYSTICK_ENABLED = True 
-    
-    # When THROTTLE_BY_USER is true and JOYSTICK_ENABLED is true, this is the rate of throttle change       
-    THROTTLE_STEP_RATE = 0.1
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
     #--- end config
     
-    SYSTEM_LINUX = 0
-    SYSTEM_WINDOWS = 1
 
     KEY_ANG_SPEED = "ang-speed"
     KEY_ANGLES = "angles"
@@ -110,8 +105,6 @@ class Cockpit(ttkFrame):
                               }
         
         self.parent = parent
-        
-        self._systemType = Cockpit.SYSTEM_LINUX if system() == "Linux" else Cockpit.SYSTEM_WINDOWS
 
         self.initUI()
 
@@ -128,9 +121,6 @@ class Cockpit(ttkFrame):
         self._updateInfoThreadRunning = False
         self._readingState = False
 
-        self._refreshThrottleThread = None
-        self._throttleFactor = 0.0
-
         self._start()
         
             
@@ -145,7 +135,7 @@ class Cockpit(ttkFrame):
         self.parent.bind_all("<Key>", self._keyDown)
         self.parent.bind_all("<KeyRelease>", self._keyUp)
 
-        if self._systemType == Cockpit.SYSTEM_LINUX:
+        if system() == "Linux":
             self.parent.bind_all("<Button-4>", self._onMouseWheelUp)
             self.parent.bind_all("<Button-5>", self._onMouseWheelDown)
 
@@ -356,20 +346,20 @@ class Cockpit(ttkFrame):
                 self._throttle.set(thrust)            
                 self._updateTarget()
 
-            elif index == 1 and Cockpit.THROTTLE_BY_USER:            
+            elif index == 2 and Cockpit.THROTTLE_BY_USER:            
             
-                self._throttleFactor = -axisValue
+                throttle = (axisValue + 100.0)/2.0 
+                self._throttle.set(throttle)
+                self._sendThrottle()
                 
-            elif (index == 3 and self._systemType == Cockpit.SYSTEM_LINUX) \
-                or (index == 4 and self._systemType == Cockpit.SYSTEM_WINDOWS):
+            elif index == 3:
                 
                 x = 196 + axisValue * 2                
                 lastCoords = self._shiftCanvas.coords(self._shiftMarker)
                 coords = (x, lastCoords[1])                 
                 self._plotShiftCanvasMarker(coords)
                 
-            elif (index == 4 and self._systemType == Cockpit.SYSTEM_LINUX) \
-                or (index == 3 and self._systemType == Cockpit.SYSTEM_WINDOWS):
+            elif index == 4:
                 
                 y = 196 + axisValue * 2 
                 lastCoords = self._shiftCanvas.coords(self._shiftMarker)
@@ -390,22 +380,9 @@ class Cockpit(ttkFrame):
             # when they are changed programmatically. Therefore, the 
             # even-handler is called explicitly here.
             self._startedCBChanged()
-            
-        if self._started.get() and sender == self._joystick:
-            
-            if index == 4 and Cockpit.THROTTLE_BY_USER:
-                
-                self._throttleFactor = 0.0
-                self._throttle.set(0.0)
-                self._sendThrottle()
-                
         
     
     def exit(self):
-
-        if self._started.get() != 0:
-            self._startedCB.deselect()
-            self._startedCBChanged()
         
         self._link.send({"key": "close", "data": None})
         
@@ -441,16 +418,11 @@ class Cockpit(ttkFrame):
     def _keyDown(self, event):
 
         if event.keysym == "Escape":            
-            self._throttle.set(0.0)
-            
-            if Cockpit.THROTTLE_BY_USER:
-                self._throttleFactor = 0.0
-                self._sendThrottle()
-            
-            #self._started.set(0)
-            #self._thrustScale.config(state=DISABLED)
-            #self._stopUpdateInfoThread()
-            #self._sendIsStarted()
+            self._throttle.set(0)
+            self._started.set(0)
+            self._thrustScale.config(state=DISABLED)
+            self._stopUpdateInfoThread()
+            self._sendIsStarted()
             
         elif event.keysym.startswith("Control"):            
             self._controlKeyActive = True
@@ -606,7 +578,7 @@ class Cockpit(ttkFrame):
                 + (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
-            #self._updateTarget()
+            self._updateTarget()
     
     
     def _thrustScaleDown(self):
@@ -617,7 +589,7 @@ class Cockpit(ttkFrame):
                 - (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
-            #self._updateTarget()
+            self._updateTarget()
             
     
     def _thrustReset(self):
@@ -706,20 +678,13 @@ class Cockpit(ttkFrame):
         
         if not self._started.get():
             self._throttle.set(0)
-            if Cockpit.THROTTLE_BY_USER:
-                self._throttleFactor = 0.0
-                self._sendThrottle()
             self._thrustScale.config(state=DISABLED)            
             #self._integralsCB.config(state=DISABLED)
             self._stopUpdateInfoThread()
-            if Cockpit.THROTTLE_BY_USER and Cockpit.JOYSTICK_ENABLED:
-                self._stopRefreshThrottleThread()
         else:
             self._thrustScale.config(state="normal")            
             #self._integralsCB.config(state="normal")
             self._startUpdateInfoThread()
-            if Cockpit.THROTTLE_BY_USER and Cockpit.JOYSTICK_ENABLED:
-                self._startRefreshThrottleThread()
             
         self._sendIsStarted()
      
@@ -929,41 +894,4 @@ class Cockpit(ttkFrame):
         self._updateInfoThreadRunning = False
         if self._updateInfoThread.isAlive():
             self._updateInfoThread.join()
-            
-    
-    def _startRefreshThrottleThread(self):
-        
-        if self._refreshThrottleThread == None or not self._refreshThrottleThread.isAlive():
-            
-            self._refreshThrottleThreadRunning = True
-        
-            self._refreshThrottleThread = Thread(target=self._refreshThrottle)
-            self._refreshThrottleThread.start()
-            
-            
-    def _stopRefreshThrottleThread(self):
-        
-        if self._refreshThrottleThread != None and self._refreshThrottleThread.isAlive():
-            self._refreshThrottleThreadRunning = False
-            self._refreshThrottleThread.join()
-        
-    
-    def _refreshThrottle(self):
-        
-        self._throttle.set(0.0)
-        while self._refreshThrottleThreadRunning:
-            
-            if self._throttleFactor != 0.0:
-            
-                throttle = self._throttle.get() + self._throttleFactor * Cockpit.THROTTLE_STEP_RATE
-                
-                if throttle > 100.0:
-                    throttle = 100.0
-                elif throttle < 0.0:
-                    throttle = 0.0
-            
-                self._throttle.set(throttle)
-                self._sendThrottle()
-
-            time.sleep(0.2)
     
