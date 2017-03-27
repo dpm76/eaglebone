@@ -5,14 +5,21 @@ Created on 10/05/2015
 
 @author: david
 '''
-from Tkconstants import BOTH, VERTICAL, HORIZONTAL, LEFT, SUNKEN, DISABLED
-from Tkinter import Frame as tkFrame, Canvas, Scale, DoubleVar, Checkbutton, \
-    Label, Entry, Message, IntVar, OptionMenu, StringVar, Spinbox
+import sys
+if sys.version_info.major < 3:
+    from Tkconstants import BOTH, VERTICAL, HORIZONTAL, LEFT, SUNKEN, DISABLED
+    from Tkinter import Frame as tkFrame, Canvas, Scale, DoubleVar, Checkbutton, \
+        Label, Entry, Message, IntVar, OptionMenu, StringVar, Spinbox
+    from ttk import Style, Frame as ttkFrame, Button
+else:
+    from tkinter.constants import BOTH, VERTICAL, HORIZONTAL, LEFT, SUNKEN, DISABLED
+    from tkinter import Frame as tkFrame, Canvas, Scale, DoubleVar, Checkbutton, \
+        Label, Entry, Message, IntVar, OptionMenu, StringVar, Spinbox
+    from tkinter.ttk import Style, Frame as ttkFrame, Button
+
 from platform import system
 from threading import Thread
 import time
-from ttk import Style, Frame as ttkFrame, Button
-
 from communications.console import ConsoleLink
 from communications.inet import INetLink
 from config import Configuration

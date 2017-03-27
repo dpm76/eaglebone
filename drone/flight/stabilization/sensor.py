@@ -10,8 +10,8 @@ import math
 import time
 
 from flight.stabilization.state import SensorState
-import imu3000_defs as imu3000
-import kxtf9_defs as kxtf9
+import flight.stabilization.imu3000_defs as imu3000
+import flight.stabilization.kxtf9_defs as kxtf9
 from sensors.vector import Vector
 
 
@@ -289,7 +289,7 @@ class Sensor(object):
         '''
         
         startMessage = "Using IMU-3000."
-        print startMessage
+        print(startMessage)
         logging.info(startMessage)
         
         #Initializes gyro
@@ -320,7 +320,7 @@ class Sensor(object):
         Calibrates sensor
         '''
         
-        print "Calibrating accelerometer..."
+        print("Calibrating accelerometer...")
         self._accOffset = [0.0]*3
         
         i = 0
@@ -338,7 +338,7 @@ class Sensor(object):
         
         
         #Calibrate gyro
-        print "Calibrating gyro..."
+        print("Calibrating gyro...")
         self._gyroOffset = [0.0]*3
         
         i = 0

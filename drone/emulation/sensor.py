@@ -95,7 +95,7 @@ class EmulatedSensor(object):
         
         text = "Using emulated drone's IMU." 
 
-        print text
+        print(text)
         logging.info(text)
         
     

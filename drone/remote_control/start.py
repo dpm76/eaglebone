@@ -6,7 +6,12 @@ Created on 15/06/2015
 @author: david
 '''
 
-from SocketServer import TCPServer
+import sys
+
+if sys.version_info.major < 3:
+    from SocketServer import TCPServer
+else:
+    from socketserver import TCPServer
 import datetime
 import logging
 
@@ -24,14 +29,14 @@ def main():
 
     message = "Waiting for remote control..." 
     logging.info(message)
-    print message
+    print(message)
     
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print "[CTRL+C] -> Stop"
+        print("[CTRL+C] -> Stop")
     finally:
-        print "Goodbye!"
+        print("Goodbye!")
         logging.info("**** [Server finish] ****")
 
 

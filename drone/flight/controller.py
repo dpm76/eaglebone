@@ -246,7 +246,7 @@ class FlightController(object):
 
         if self._isRunning:
 
-            print "Starting PID..."
+            print("Starting PID...")
             logging.info("Starting PID...")
 
             self._sensor.resetGyroReadTime()
@@ -261,7 +261,7 @@ class FlightController(object):
         
         self._pid.stop()
         
-        print "PID finished."
+        print("PID finished.")
         logging.info("PID finished.")
                 
     
@@ -309,7 +309,7 @@ class FlightController(object):
             self._pidKI[axisIndex] = valueI
             self._pidKD[axisIndex] = valueD
             
-            print "constantes: {0}".format([valueP, valueI, valueD])
+            print("constantes: {0}".format([valueP, valueI, valueD]))
             
 
     def alterPidAccelConstants(self, axisIndex, valueP, valueI, valueD):

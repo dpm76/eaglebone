@@ -14,8 +14,8 @@ import sys
 from threading import Thread
 from time import sleep
 
-from event import EventHook
-from joystick import Joystick
+from device.event import EventHook
+from device.joystick import Joystick
 
 
 class JoystickManager(object):

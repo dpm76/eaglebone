@@ -3,7 +3,7 @@ Created on 22 de may. de 2016
 
 @author: david
 '''
-from event import EventHook
+from device.event import EventHook
 
 
 class Joystick(object):

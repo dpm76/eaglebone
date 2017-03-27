@@ -60,7 +60,7 @@ class Driver(object):
         elif motorClass == Configuration.VALUE_MOTOR_CLASS_REMOTE:
             #TODO deprecated: this feature won't be implemented
             message = "Remote motor will not be implemented!"
-            print message
+            print(message)
             logging.fatal(message)
             sys.exit()
             

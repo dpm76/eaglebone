@@ -4,11 +4,22 @@ Created on 25 de feb. de 2016
 
 @author: david
 '''
-from Tkconstants import BOTH, DISABLED
-from Tkinter import Tk, Frame as tkFrame, Canvas, StringVar, Entry, Label
+
+import sys
+
+if sys.version_info.major < 3:
+
+    from Tkconstants import BOTH, DISABLED
+    from Tkinter import Tk, Frame as tkFrame, Canvas, StringVar, Entry, Label
+    from ttk import Frame as ttkFrame, Style
+else:
+    from tkinter.constants import BOTH, DISABLED
+    from tkinter import Tk, Frame as tkFrame, Canvas, StringVar, Entry, Label
+    from tkinter.ttk import Frame as ttkFrame, Style
+    
 from math import cos, sin, radians
 from threading import Thread
-from ttk import Frame as ttkFrame, Style
+
 
 from sensors.vector import Vector
 

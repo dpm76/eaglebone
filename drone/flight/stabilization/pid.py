@@ -150,7 +150,7 @@ class PID(object):
                 freq = 1.0/self._maxPeriod
                 currentFreq = 1.0/self._currentPeriod
                 message="I cannot operate at min. {0:.3f}Hz. Current rate is {1:.3f}Hz".format(freq, currentFreq)
-                print message
+                print(message)
                 logging.warn(message)
 
             diff += self._periodTarget - self._currentPeriod
@@ -170,7 +170,7 @@ class PID(object):
             
         message = "PID-\"{0}\" (net values) t: {1:.3f}ms; f: {2:.3f}Hz".format(self._pidName, tAvg, fAvg)
         logging.info(message)
-        print message
+        print(message)
         
         underFreqPerc = underFreq * 100.0 / iterCount
         overFreqPerc = overFreq * 100.0 / iterCount
@@ -179,7 +179,7 @@ class PID(object):
         message = "In freq: {0:.3f}%; Acceptable: {1:.3f}%; Under f.: {2:.3f}%; Over f.: {3:.3f}%"\
             .format(rightFreqPerc, acceptableFreqPerc, underFreqPerc, overFreqPerc)
         logging.info(message)
-        print message
+        print(message)
         
     
     def start(self):
@@ -219,7 +219,7 @@ class PID(object):
                 averageFrequency = float("inf")
                 
             message = "PID-\"{0}\" - Avg. time: {1:.3f}ms - Avg. freq: {2:.3f}Hz".format(self._pidName, averageDeltaTime, averageFrequency)
-            print message
+            print(message)
             logging.info(message)
                 
     

@@ -6,7 +6,11 @@ Created on 15/06/2015
 @author: david
 '''
 
-from SocketServer import StreamRequestHandler
+import sys
+if sys.version_info.major < 3:
+    from SocketServer import StreamRequestHandler
+else:
+    from socketserver import StreamRequestHandler
 import json
 import logging
 from threading import Thread
@@ -47,13 +51,13 @@ class Dispatcher(StreamRequestHandler):
         
         logMessage = "Remote control connected. Waiting for commands..."
         logging.info(logMessage)
-        print logMessage
+        print(logMessage)
 
         try:
             done = False
             while not done:
                 
-                rawMessage = self.rfile.readline().strip()
+                rawMessage = self.rfile.readline().strip().decode("utf-8")
                 
                 if rawMessage != "":
                     message = json.loads(rawMessage)
@@ -72,7 +76,7 @@ class Dispatcher(StreamRequestHandler):
 
         logMessage = "Connection end"
         logging.info(logMessage)
-        print logMessage
+        print(logMessage)
 
   
     def _dispatch(self, message):
@@ -172,7 +176,7 @@ class Dispatcher(StreamRequestHandler):
             
             try:        
                 serializedMessage = json.dumps({"key": responseKey, "response": message})                
-                self.wfile.write(serializedMessage + "\n")
+                self.wfile.write((serializedMessage + "\n").encode("utf-8"))
                 
             except Exception as ex:
                 logging.error("Cannot send object '{0}': {1}".format(message, ex))            
