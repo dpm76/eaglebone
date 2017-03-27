@@ -26,7 +26,8 @@ class Cockpit(ttkFrame):
     
     #TODO: 20160415 DPM - Set these values from configuration file
     #--- config
-    THROTTLE_BY_USER = False
+    THROTTLE_BY_USER = True
+    THROTTLE_RESOLUTION = 0.1
     
     # Joystick enabled or not, if any
     JOYSTICK_ENABLED = True 
@@ -215,7 +216,7 @@ class Cockpit(ttkFrame):
         if Cockpit.THROTTLE_BY_USER:
 
             self._thrustScale = Scale(controlFrame, orient=VERTICAL, from_=100.0, to=0.0, \
-                                tickinterval=0, variable=self._throttle, resolution=0.1, \
+                                tickinterval=0, variable=self._throttle, resolution=Cockpit.THROTTLE_RESOLUTION, \
                                 length=200, showvalue=1, \
                                 state=DISABLED,
                                 command=self._onThrustScaleChanged)
@@ -348,7 +349,13 @@ class Cockpit(ttkFrame):
 
             elif index == 2 and Cockpit.THROTTLE_BY_USER:            
             
-                throttle = (axisValue + 100.0)/2.0 
+                rowThrottle = (axisValue + 100.0)/2.0 
+                if rowThrottle < 10.0:
+                    throttle = rowThrottle * 6.0
+                elif rowThrottle < 90.0:
+                    throttle = 60.0 + ((rowThrottle - 10.0) / 8.0)
+                else:
+                    throttle = 70.0 + (rowThrottle - 90.0) * 3.0
                 self._throttle.set(throttle)
                 self._sendThrottle()
                 
@@ -575,7 +582,7 @@ class Cockpit(ttkFrame):
         #TODO: 20160526 DPM: El valor de incremento de aceleración (1.0) puede ser muy alto
         if self._started.get(): 
             newValue = self._thrustScale.get() \
-                + (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
+                + (Cockpit.THROTTLE_RESOLUTION if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
             self._updateTarget()
@@ -586,7 +593,7 @@ class Cockpit(ttkFrame):
         #TODO: 20160526 DPM: El valor de decremento de aceleración (1.0) puede ser muy alto
         if self._started.get():
             newValue = self._thrustScale.get() \
-                - (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
+                - (Cockpit.THROTTLE_RESOLUTION if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
             self._updateTarget()
