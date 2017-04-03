@@ -26,7 +26,7 @@ class Dispatcher(StreamRequestHandler):
     MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
     MAX_ANGLE_SPEED = 50.0 #º/s for yaw
     
-    PID_THROTTLE_THRESHOLD = 15.0 #Threshold to activate or deactivate the PID
+    PID_THROTTLE_THRESHOLD = 1.0 #Threshold to activate or deactivate the PID
 
     def setup(self):
         

@@ -21,14 +21,17 @@ class EmulatedDrone(object):
     '''
     
     #TODO Create config
-    REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
+    REALISTIC_FLIGHT = False #Realistic or ideal flight emulation mode
     HANGED_MODE = False #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
     X_CONFIGURATON = True # Indicates whether the drone is configured as X or + 
     PROPELLER_THRUST_RATE = 0.0075 # 0.75kg/propeller @100% (total x4 propellers: 3.0kg max. thrust)
     PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
     WEIGHT = 1.6 # kg
-    MAX_CRASH_SPEED = -1.0 #m/s
-    ARM_LENGTH = 0.23 #m    
+    MAX_CRASH_SPEED = -1000.0 #m/s
+    ARM_LENGTH = 0.23 #m
+    
+    HORIZONTAL_FRICTION_CONSTANT = 0.1
+    VERTICAL_FRICTION_CONSTANT = 0.4
     #end config
     
     R1 = sqrt(2.0)/2.0 # constant used for angle rotation in X-configuration mode
@@ -113,9 +116,14 @@ class EmulatedDrone(object):
                 propellerForces = propeller.getThrust()                
                 self._state._angleSpeeds[2] += propeller.getTorque()
                 forces = map(add, forces, propellerForces)
+            
+            forces = [force for force in forces]            
+            forces[0] -= self._state._speeds[0] * EmulatedDrone.HORIZONTAL_FRICTION_CONSTANT
+            forces[1] -= self._state._speeds[1] * EmulatedDrone.HORIZONTAL_FRICTION_CONSTANT
+            forces[2] -= self._state._speeds[2] * EmulatedDrone.VERTICAL_FRICTION_CONSTANT
 
             previousAccels = deepcopy(self._state._accels)
-            self._state._accels = [force / self._weight for force in forces]
+            self._state._accels = [force / self._weight for force in forces]            
             
             #Speed & position
             if EmulatedDrone.HANGED_MODE:
@@ -181,7 +189,7 @@ class EmulatedDrone(object):
         
         if angle < -180.0:
             angle +=  360.0
-        elif angle > 180: 
+        elif angle > 180.0: 
             angle -= 360.0
             
         return angle
