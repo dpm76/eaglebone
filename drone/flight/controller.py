@@ -71,6 +71,13 @@ class FlightController(object):
         
         self._pidThrottleThreshold = 0
         
+        self._maxAngleX = self._config[Configuration.KEY_MAX_ANGLE_X]
+        self._maxAngleY = self._config[Configuration.KEY_MAX_ANGLE_Y]
+        #TODO: Rate mode
+        #self._maxAngleSpeedX = self._config[Configuration.KEY_MAX_ANGLE_SPEED_X] #used for rate mode when implemented
+        #self._maxAngleSpeedY = self._config[Configuration.KEY_MAX_ANGLE_SPEED_Y] #used for rate mode when implemented
+        self._maxAngleSpeedZ = self._config[Configuration.KEY_MAX_ANGLE_SPEED_Z]
+        
         
     def setPidThrottleThreshold(self, throttle):
 
@@ -199,12 +206,13 @@ class FlightController(object):
         
         if throttle1 >= self._pidThrottleThreshold \
             and throttle0 < self._pidThrottleThreshold:
-            
+            #TODO: Stop integrals only
             self._startPid()
             
         elif throttle1 < self._pidThrottleThreshold \
             and throttle0 >= self._pidThrottleThreshold:
             
+            #TODO: Reset and restore integrals here
             self._stopPid()
             self._driver.setThrottle(throttle1)
         
@@ -213,7 +221,39 @@ class FlightController(object):
             self._driver.commitIncrements()
         
 
+    def setInputs(self, inputs):
+        '''
+        Sets the controller inputs. They will be translated into the proper 
+        targets depending of the current flight mode.
+        
+        Input range is [-100..100]
+        
+        The order within the inputs-array is as follows:
+        
+        inputs[0]: roll 
+        inputs[1]: pitch
+        inputs[2]: rudder
+        TODO: inputs[3]: throttle (Not implemented)        
+        '''
+
+        targets = [inputs[0] * self._maxAngleX / 100.0,
+                   inputs[1] * self._maxAngleY / 100.0,
+                   inputs[2] * self._maxAngleSpeedZ / 100.0]
+        #inputs[3] * Dispatcher.MAX_ACCEL_Z / 100.0]
+
+
+        self._pid.setTarget(targets[0], 3) #angle X
+        self._pid.setTarget(targets[1], 4) #angle Y
+        self._pid.setTarget(targets[2], 2) #angle speed Z
+        #self._pid.setTarget(targets[3], 7) #accel Z
+
+
+    
     def setTargets(self, targets):
+        '''
+        Set the target angles and angle-speeds directly.
+        @deprecated: Beacuse safety reasons, don't use this method. Please use setInputs instead.
+        '''
         
         self._pid.setTarget(targets[0], 3) #angle X
         self._pid.setTarget(targets[1], 4) #angle Y
