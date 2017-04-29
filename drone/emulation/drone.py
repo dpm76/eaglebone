@@ -22,7 +22,7 @@ class EmulatedDrone(object):
     
     #TODO Create config
     REALISTIC_FLIGHT = False #Realistic or ideal flight emulation mode
-    HANGED_MODE = False #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
+    HANGED_MODE = True #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
     X_CONFIGURATON = True # Indicates whether the drone is configured as X or + 
     PROPELLER_THRUST_RATE = 0.0075 # 0.75kg/propeller @100% (total x4 propellers: 3.0kg max. thrust)
     PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
@@ -182,7 +182,7 @@ class EmulatedDrone(object):
                 propeller.setAngles(self._state._angles)
 
             #if dt < 1.0:
-            #    print self._state            
+            #    print self._state
         
     
     def _normalizeAngle(self, angle):

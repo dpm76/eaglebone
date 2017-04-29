@@ -291,7 +291,7 @@ class Cockpit(ttkFrame):
 
         self._pidPString = StringVar()
         self._pidPString.set("0.00")
-        self._pidPSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=100.0, increment=0.01, state=DISABLED, \
+        self._pidPSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=10000.0, increment=0.01, state=DISABLED, \
                                          textvariable=self._pidPString, command=self._onPidSpinboxChanged)
         self._pidPSpinbox.pack(side=LEFT, padx=2)
 
@@ -299,7 +299,7 @@ class Cockpit(ttkFrame):
 
         self._pidIString = StringVar()
         self._pidIString.set("0.00")
-        self._pidISpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=100.0, increment=0.01, state=DISABLED, \
+        self._pidISpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=10000.0, increment=0.01, state=DISABLED, \
                                          textvariable=self._pidIString, command=self._onPidSpinboxChanged)
         self._pidISpinbox.pack(side=LEFT, padx=2)
         
@@ -307,7 +307,7 @@ class Cockpit(ttkFrame):
         
         self._pidDString = StringVar()
         self._pidDString.set("0.00")
-        self._pidDSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=100.0, increment=0.01, state=DISABLED, \
+        self._pidDSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=10000.0, increment=0.01, state=DISABLED, \
                                          textvariable=self._pidDString, command=self._onPidSpinboxChanged)
         self._pidDSpinbox.pack(side=LEFT, padx=2)
         

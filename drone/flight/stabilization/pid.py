@@ -127,6 +127,11 @@ class PID(object):
         
         diff = 0.0
         
+        minFreq = 1.0/self._maxPeriod
+        message = "Minimal freq. is {0:.3f}Hz.".format(minFreq)
+        print(message)
+        logging.info(message)
+        
         self._lastTime = time.time()
         time.sleep(self._period)
         while self._isRunning:
@@ -147,11 +152,6 @@ class PID(object):
                 acceptableFreq += 1
             else:
                 underFreq += 1
-                freq = 1.0/self._maxPeriod
-                currentFreq = 1.0/self._currentPeriod
-                message="I cannot operate at min. {0:.3f}Hz. Current rate is {1:.3f}Hz".format(freq, currentFreq)
-                print(message)
-                logging.warn(message)
 
             diff += self._periodTarget - self._currentPeriod
             sleepTime = self._period - calculationTime + 0.1 * diff
