@@ -20,7 +20,7 @@ class EmulatedDrone(object):
     Emulates a physical drone
     '''
     
-    #TODO Create config
+    #TODO: Create config
     REALISTIC_FLIGHT = False #Realistic or ideal flight emulation mode
     HANGED_MODE = True #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
     X_CONFIGURATON = True # Indicates whether the drone is configured as X or + 

@@ -118,7 +118,7 @@ class PID(object):
     
     def _do(self): 
         
-        dtSum = 0.0
+        #dtSum = 0.0
         iterCount = 0        
         underFreq = 0
         overFreq = 0
@@ -141,7 +141,7 @@ class PID(object):
             self._calculate()
             
             calculationTime = time.time() - t0
-            dtSum += calculationTime
+            #dtSum += calculationTime
             iterCount += 1
                  
             if self._currentPeriod < self._minPeriod:
@@ -160,7 +160,7 @@ class PID(object):
             else:
                 time.sleep(0.001)
 
-                
+        '''        
         if dtSum != 0.0 and iterCount != 0:
             tAvg = dtSum * 1000.0 / iterCount
             fAvg = float(iterCount) / dtSum
@@ -171,6 +171,7 @@ class PID(object):
         message = "PID-\"{0}\" (net values) t: {1:.3f}ms; f: {2:.3f}Hz".format(self._pidName, tAvg, fAvg)
         logging.info(message)
         print(message)
+        '''
         
         underFreqPerc = underFreq * 100.0 / iterCount
         overFreqPerc = overFreq * 100.0 / iterCount
