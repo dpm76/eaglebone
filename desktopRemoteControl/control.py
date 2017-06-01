@@ -5,7 +5,13 @@ Created on 10/05/2015
 
 @author: david
 '''
-from Tkinter import Tk
+import sys
+
+if sys.version_info.major < 3:
+    from Tkinter import Tk
+else:
+    from tkinter import Tk
+    
 import argparse
 
 from cockpit import Cockpit

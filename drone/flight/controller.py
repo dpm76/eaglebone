@@ -6,11 +6,10 @@ Created on 14/04/2015
 @author: david
 '''
 import logging
-import rpyc
-from threading import Thread
 import time
 
 from config import Configuration
+from emulation.drone import EmulatedDrone
 from emulation.sensor import EmulatedSensor
 from flight.driving.driver import Driver
 from flight.stabilization.pid import PID
@@ -23,7 +22,12 @@ from sensors.imu6050dmp import Imu6050Dmp
 
 class FlightController(object):
     
-    PID_PERIOD = 0.02  # seconds (50Hz)
+    PID_PERIOD = 0.006 #166.666Hz #0.02  # seconds (50Hz)
+    ANGLE_SPEED_FACTOR = 1000.0 # Angle-speed's PID-constants are divided by this factor
+    
+    FLIGHT_MODE_ANGLE_SPEED = 0
+    FLIGHT_MODE_ANGLE = 1
+    FLIGHT_MODE_ACCEL = 2
     
     _instance = None
     
@@ -44,9 +48,12 @@ class FlightController(object):
         self._createSensor(self._config[Configuration.KEY_IMU_CLASS])
         
         #PID constants must have the same length
-        self._pidAnglesSpeedKP = self._config[Configuration.PID_ANGLES_SPEED_KP] 
-        self._pidAnglesSpeedKI = self._config[Configuration.PID_ANGLES_SPEED_KI]
-        self._pidAnglesSpeedKD = self._config[Configuration.PID_ANGLES_SPEED_KD]
+        self._pidAnglesSpeedKP = [k / FlightController.ANGLE_SPEED_FACTOR for k \
+                                     in self._config[Configuration.PID_ANGLES_SPEED_KP]]
+        self._pidAnglesSpeedKI = [k / FlightController.ANGLE_SPEED_FACTOR for k \
+                                     in self._config[Configuration.PID_ANGLES_SPEED_KI]]
+        self._pidAnglesSpeedKD = [k / FlightController.ANGLE_SPEED_FACTOR for k \
+                                     in self._config[Configuration.PID_ANGLES_SPEED_KD]]
         
         #PID constants must have the same length
         self._pidAnglesKP = self._config[Configuration.PID_ANGLES_KP] 
@@ -66,10 +73,26 @@ class FlightController(object):
                         self._pidKP, self._pidKI, self._pidKD, \
                         self._readPIDInput, self._setPIDOutput, \
                         "stabilization-pid")
-        self._pid.setTargets([0.0]*len(self._pidKP))
-        
+        self._pid.setTargets([0.0]*len(self._pidKP))        
 
         self._isRunning = False
+        
+        self._pidThrottleThreshold = 0
+        
+        self._maxAngleX = self._config[Configuration.KEY_MAX_ANGLE_X]
+        self._maxAngleY = self._config[Configuration.KEY_MAX_ANGLE_Y]
+        #TODO: Rate mode
+        #self._maxAngleSpeedX = self._config[Configuration.KEY_MAX_ANGLE_SPEED_X] #used for rate mode when implemented
+        #self._maxAngleSpeedY = self._config[Configuration.KEY_MAX_ANGLE_SPEED_Y] #used for rate mode when implemented
+        self._maxAngleSpeedZ = self._config[Configuration.KEY_MAX_ANGLE_SPEED_Z]
+        
+        #TODO: Read initial flight mode from configuration
+        self._flightMode = FlightController.FLIGHT_MODE_ANGLE
+        
+        
+    def setPidThrottleThreshold(self, throttle):
+
+        self._pidThrottleThreshold = throttle
 
 
     def _createSensor(self, imuClass):
@@ -78,11 +101,11 @@ class FlightController(object):
             
             self._sensor = Sensor()
             
-        elif imuClass == Configuration.VALUE_IMU_CLASS_REMOTE:
-            
-            self._remote = rpyc.classic.connect(self._config[Configuration.KEY_REMOTE_ADDRESS])
-            imuDummy = self._remote.modules["sensors.IMU_dummy"]
-            self._sensor = imuDummy.IMUDummy()
+#         elif imuClass == Configuration.VALUE_IMU_CLASS_REMOTE:
+#             
+#             self._remote = rpyc.classic.connect(self._config[Configuration.KEY_REMOTE_ADDRESS])
+#             imuDummy = self._remote.modules["sensors.IMU_dummy"]
+#             self._sensor = imuDummy.IMUDummy()
 
         elif imuClass == Configuration.VALUE_IMU_CLASS_3000EMU:
             
@@ -94,7 +117,7 @@ class FlightController(object):
             
         elif imuClass == Configuration.VALUE_IMU_CLASS_EMULATION:
             
-            self._sensor = EmulatedSensor()
+            self._sensor = EmulatedSensor(EmulatedDrone.REALISTIC_FLIGHT)
             
         else: #Dummy as default
             
@@ -121,8 +144,8 @@ class FlightController(object):
         #Moving the drone along X-direction makes it turning on Y-axis
         self._driver.shiftX(output[1])
         
-        #angle Z
-        self._driver.spin(output[2])        
+        #angle-speed Z
+        self._driver.spin(output[2])
         
         logging.debug("PID-angles-speed output: {0}".format(output))
     
@@ -137,14 +160,12 @@ class FlightController(object):
 
 
     def _setPIDAnglesOutput(self, output):
-        
-        #angle X        
-        self._pid.setTarget(output[0], 0)
-        
-        #angle Y
-        self._pid.setTarget(output[1], 1)
+       
+        if self._flightMode == FlightController.FLIGHT_MODE_ANGLE:
+            self._pid.setTarget(output[0], 0) #angle-speed X
+            self._pid.setTarget(output[1], 1) #angle-speed Y
                         
-        logging.debug("PID-angles output: {0}".format(output))
+            logging.debug("PID-angles output: {0}".format(output))
     
     
     def _readPIDAccelInput(self):
@@ -158,11 +179,14 @@ class FlightController(object):
     
     def _setPIDAccelOutput(self, output):
         
+        #TODO: Implement accel stabilization
+        
         #accel Z
         
-        self._driver.addThrottle(output[2])
+        #self._driver.addThrottle(output[2])
 
-        logging.debug("PID-accel output: {0}".format(output))
+        #logging.debug("PID-accel output: {0}".format(output))
+        pass
         
 
     def _readPIDInput(self):
@@ -194,26 +218,89 @@ class FlightController(object):
     
     def addThrottle(self, increment):
         
+        throttle0 = self._driver.getBaseThrottle()
         self._driver.addThrottle(increment)
+        throttle1 = self._driver.getBaseThrottle()
+        
+        if throttle1 >= self._pidThrottleThreshold \
+            and throttle0 < self._pidThrottleThreshold:
+            #TODO: Stop integrals only
+            self._startPid()
+            
+        elif throttle1 < self._pidThrottleThreshold \
+            and throttle0 >= self._pidThrottleThreshold:
+            
+            #TODO: Reset and restore integrals here
+            self._stopPid()
+            self._driver.setThrottle(throttle1)
+        
+        if not self._pid.isRunning():
+            
+            self._driver.commitIncrements()
         
 
-    def setTargets(self, targets):
+    def setInputs(self, inputs):
+        '''
+        Sets the controller inputs. They will be translated into the proper 
+        targets depending of the current flight mode.
         
+        Input range is [-100..100]
+        
+        The order within the inputs-array is as follows:
+        
+        inputs[0]: roll 
+        inputs[1]: pitch
+        inputs[2]: rudder
+        TODO: inputs[3]: throttle (Not implemented)        
+        '''
+
+        targets = [inputs[0] * self._maxAngleX / 100.0,
+                   inputs[1] * self._maxAngleY / 100.0,
+                   inputs[2] * self._maxAngleSpeedZ / 100.0]
+        #inputs[3] * Dispatcher.MAX_ACCEL_Z / 100.0]
+
+
         self._pid.setTarget(targets[0], 3) #angle X
         self._pid.setTarget(targets[1], 4) #angle Y
         self._pid.setTarget(targets[2], 2) #angle speed Z
+        #self._pid.setTarget(targets[3], 7) #accel Z
+
+
+    
+    def setTargets(self, targets):
+        '''
+        Set the target angles and angle-speeds directly.
+        @deprecated: Beacuse safety reasons, don't use this method. Please use setInputs instead.
+        '''
+        
+        if self._flightMode == FlightController.FLIGHT_MODE_ANGLE:
+            self._pid.setTarget(targets[0], 3) #angle X
+            self._pid.setTarget(targets[1], 4) #angle Y
+        elif self._flightMode == FlightController.FLIGHT_MODE_ANGLE_SPEED:
+            self._pid.setTarget(targets[0], 0) #angle-speed X
+            self._pid.setTarget(targets[1], 1) #angle-speed Y
+        else: #TODO: FlightController.FLIGHT_MODE_ACCEL
+            raise Exception("Flight mode accel not implemented!")
+        
+        self._pid.setTarget(targets[2], 2) #angle speed Z
         self._pid.setTarget(targets[3], 7) #accel Z
         
+        
+    def setFlightMode(self, flightMode):
+    
+        self._flightMode = flightMode
+        self._pid.setTargets([0.0]*len(self._pidKP))
+        
      
-    def enableIntegrals(self):
-
-        self._pid.enableIntegrals()
-        
-        
-    def disableIntegrals(self):
-
-        self._pid.disableIntegrals()
-               
+#     def enableIntegrals(self):
+# 
+#         self._pid.enableIntegrals()
+#         
+#         
+#     def disableIntegrals(self):
+# 
+#         self._pid.disableIntegrals()
+#                
 
     def start(self):
         
@@ -226,27 +313,26 @@ class FlightController(object):
             self._driver.idle()        
     
         
-    def startPid(self):
+    def _startPid(self):
 
         if self._isRunning:
 
-            print "Starting PID..."
+            print("Starting PID...")
             logging.info("Starting PID...")
 
             self._sensor.resetGyroReadTime()
             
             time.sleep(FlightController.PID_PERIOD)            
             self._sensor.refreshState()
-            #Thread(target=self._doFlightDetection).start()
-
+            
             self._pid.start()
             
     
-    def stopPid(self):
+    def _stopPid(self):
         
         self._pid.stop()
         
-        print "PID finished."
+        print("PID finished.")
         logging.info("PID finished.")
                 
     
@@ -255,8 +341,8 @@ class FlightController(object):
         if self._isRunning:
         
             self._isRunning = False
-                           
-            self.stopPid()
+            
+            self._stopPid()               
             self.idle()
             
             self._driver.stop()        
@@ -265,11 +351,13 @@ class FlightController(object):
         
     def standBy(self):
         
+        self._stopPid()
         self._driver.standBy()
     
 
     def idle(self):
         
+        self._stopPid()
         self._driver.idle()
         
     
@@ -277,9 +365,9 @@ class FlightController(object):
         
         if axisIndex < len(self._pidAnglesSpeedKP):
             
-            self._pidKP[axisIndex] = valueP
-            self._pidKI[axisIndex] = valueI
-            self._pidKD[axisIndex] = valueD
+            self._pidKP[axisIndex] = valueP / FlightController.ANGLE_SPEED_FACTOR
+            self._pidKI[axisIndex] = valueI / FlightController.ANGLE_SPEED_FACTOR
+            self._pidKD[axisIndex] = valueD / FlightController.ANGLE_SPEED_FACTOR
         
 
     def alterPidAnglesConstants(self, axisIndex, valueP, valueI, valueD):
@@ -291,6 +379,8 @@ class FlightController(object):
             self._pidKP[axisIndex] = valueP
             self._pidKI[axisIndex] = valueI
             self._pidKD[axisIndex] = valueD
+            
+            print("constantes: {0}".format([valueP, valueI, valueD]))
             
 
     def alterPidAccelConstants(self, axisIndex, valueP, valueI, valueD):
@@ -314,43 +404,10 @@ class FlightController(object):
         state = State()
         
         state._throttles = self._driver.getThrottles()
-        state._angles = [0.0]*3
-        state._accels = [0.0]*3
-        #TODO: Removed due to sensor error measurement
-        #state._angles = self._sensor.readDeviceAngles()
-        #state._angles[2] = self._sensor.readAngleSpeeds()[2]
-        #state._accels = self._sensor.readAccels()
+        state._angles = self._sensor.readDeviceAngles()
+        state._angles[2] = self._sensor.readAngleSpeeds()[2]
+        state._accels = self._sensor.readAccels()
+        state._currentPeriod = self._pid.getCurrentPeriod()
         
         return state
-    
-    
-    def _doFlightDetection(self):
-        
-        for index in range(3):
-            self.alterPidAnglesSpeedConstants(index, 0.0, 0.0, 0.0)
-            
-        for index in range(2):
-            self.alterPidAnglesConstants(index, 0.0, 0.0, 0.0)
-        
-        self._pid.disableIntegrals()
-        
-        maxError = self._sensor.getMaxErrorZ()      
-        accelZ = self._sensor.readAccels()[2]
-        while self._isRunning and accelZ < maxError: 
-            accelZ = self._sensor.readAccels()[2]
-            time.sleep(FlightController.PID_PERIOD)
-        
-        if self._isRunning:
-            message="Flight detected: accel-Z = {0:.3f}".format(accelZ)
-            logging.debug(message)
-            print message
-                
-            for index in range(3):
-                self.alterPidAnglesSpeedConstants(index, self._pidAnglesSpeedKP[index], self._pidAnglesSpeedKI[index], self._pidAnglesSpeedKD[index])
-                
-            for index in range(2):
-                self.alterPidAnglesConstants(index, self._pidAnglesKP[index], self._pidAnglesKI[index], self._pidAnglesKD[index])
-            
-            self._pid.enableIntegrals()
-        
     

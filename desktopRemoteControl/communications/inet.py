@@ -43,7 +43,7 @@ class INetLink(object):
         '''
         
         serializedMessage = json.dumps(message)
-        self._link.sendall(serializedMessage + "\n")
+        self._link.sendall((serializedMessage + "\n").encode("utf-8"))
 
         if callback!=None:
             self._callbacks[message["key"]] = callback
@@ -67,12 +67,12 @@ class INetLink(object):
                 serializedMessage = linkFile.readline().strip()
                 message = json.loads(serializedMessage)
                 responseKey = message["key"]
-                if self._callbacks.has_key(responseKey):
+                if responseKey in self._callbacks:
                     callback = self._callbacks.pop(responseKey)                            
                     callback(message["response"])                
             except Exception as ex:            
-                print "Cannot read message '{0}'".format(serializedMessage)
-                print "Exception: {0}".format(ex)
+                print("Cannot read message '{0}'".format(serializedMessage))
+                print("Exception: {0}".format(ex))
                 
     
     def close(self):

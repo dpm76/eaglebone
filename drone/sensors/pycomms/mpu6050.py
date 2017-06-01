@@ -5,7 +5,7 @@ from copy import deepcopy
 from math import atan, atan2, sqrt, asin
 from time import sleep
 
-from pycomms import PyComms
+from sensors.pycomms.pycomms import PyComms
 from sensors.vector import Vector
 
 

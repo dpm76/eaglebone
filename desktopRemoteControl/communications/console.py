@@ -28,12 +28,12 @@ class ConsoleLink(object):
 
     def open(self):
         
-        print "ConsoleLink open."
+        print("ConsoleLink open.")
         
     
     def send(self, message, callback=None):
 
-        print str(message)
+        print(str(message))
         if callback != None:
             Thread(target=self._receive, kwargs=dict(callback=callback)).start()
 
@@ -46,6 +46,6 @@ class ConsoleLink(object):
 
     def close(self):
         
-        print "ConsoleLink closed."
+        print("ConsoleLink closed.")
 
     

@@ -5,30 +5,43 @@ Created on 10/05/2015
 
 @author: david
 '''
-from Tkconstants import BOTH, VERTICAL, HORIZONTAL, LEFT, SUNKEN, DISABLED
-from Tkinter import Frame as tkFrame, Canvas, Scale, DoubleVar, Checkbutton, \
-    Label, Entry, Message, IntVar, OptionMenu, StringVar, Spinbox
+import sys
+if sys.version_info.major < 3:
+    from Tkconstants import BOTH, VERTICAL, HORIZONTAL, LEFT, SUNKEN, DISABLED
+    from Tkinter import Frame as tkFrame, Canvas, Scale, DoubleVar, Checkbutton, \
+        Label, Entry, Message, IntVar, OptionMenu, StringVar, Spinbox
+    from ttk import Style, Frame as ttkFrame, Button
+else:
+    from tkinter.constants import BOTH, VERTICAL, HORIZONTAL, LEFT, SUNKEN, DISABLED
+    from tkinter import Frame as tkFrame, Canvas, Scale, DoubleVar, Checkbutton, \
+        Label, Entry, Message, IntVar, OptionMenu, StringVar, Spinbox
+    from tkinter.ttk import Style, Frame as ttkFrame, Button
+
 from platform import system
 from threading import Thread
 import time
-from ttk import Style, Frame as ttkFrame, Button
-
 from communications.console import ConsoleLink
 from communications.inet import INetLink
 from config import Configuration
+from device.manager import JoystickManager
 
 
 class Cockpit(ttkFrame):
     '''
-    Remote controller GUI 
+    Remote device GUI 
     '''
     
     #TODO: 20160415 DPM - Set these values from configuration file
-    THROTTLE_BY_USER = False
+    #--- config
+    THROTTLE_BY_USER = True
+    THROTTLE_RESOLUTION = 0.1
+    
+    # Joystick enabled or not, if any
+    JOYSTICK_ENABLED = True 
 
     DEFAULT_DRONE_IP = "192.168.1.130"
     DEFAULT_DRONE_PORT = 2121
-    #---
+    #--- end config
     
 
     KEY_ANG_SPEED = "ang-speed"
@@ -41,18 +54,12 @@ class Cockpit(ttkFrame):
     DIR_VERTICAL = 1
     DIR_HORIZONTAL = 2
     
-    MAX_ACCEL = 10.0 #TODO currently angles. Replace by m/s² later
-    MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
-    MAX_ANGLE_SPEED = 20.0 #º/s
-
     def __init__(self, parent, isDummy = False, droneIp = DEFAULT_DRONE_IP, dronePort = DEFAULT_DRONE_PORT):
         '''
         Constructor
         '''
         ttkFrame.__init__(self, parent)
         
-        self._started = IntVar()
-        self._integralsEnabled = IntVar()
         self._target = [0.0] * 4        
         
         self._selectedPidConstats = "--"
@@ -148,6 +155,7 @@ class Cockpit(ttkFrame):
         commandsFrame = tkFrame(self)
         commandsFrame.grid(column=0, row=0, sticky="WE")
         
+        self._started = IntVar()
         self._startedCB = Checkbutton(commandsFrame, text="On", variable=self._started, command=self._startedCBChanged)
         self._startedCB.pack(side=LEFT, padx=4)
         
@@ -195,9 +203,15 @@ class Cockpit(ttkFrame):
             Entry(infoFrame, textvariable=self._speedTexts[index], state=DISABLED, width=5).grid(column=index, row=8)
         
         #Height
-        Label(infoFrame, text="Height").grid(column=0, row=9, sticky="W")
+        Label(infoFrame, text="Height").grid(column=0, row=9, sticky="E")
         self._heightText = StringVar()
-        Entry(infoFrame, state=DISABLED, width=5).grid(column=1, row=9)
+        Entry(infoFrame, textvariable=self._heightText, state=DISABLED, width=5).grid(column=1, row=9)
+        
+        #Loop rate
+        Label(infoFrame, text="Loop @").grid(column=0, row=10, sticky="E")
+        self._loopRateText = StringVar()
+        Entry(infoFrame, textvariable=self._loopRateText, state=DISABLED, width=5).grid(column=1, row=10)
+        Label(infoFrame, text="Hz").grid(column=2, row=10, sticky="W")
         
         #control
         
@@ -209,7 +223,7 @@ class Cockpit(ttkFrame):
         if Cockpit.THROTTLE_BY_USER:
 
             self._thrustScale = Scale(controlFrame, orient=VERTICAL, from_=100.0, to=0.0, \
-                                tickinterval=0, variable=self._throttle, resolution=0.1, \
+                                tickinterval=0, variable=self._throttle, resolution=Cockpit.THROTTLE_RESOLUTION, \
                                 length=200, showvalue=1, \
                                 state=DISABLED,
                                 command=self._onThrustScaleChanged)
@@ -237,10 +251,10 @@ class Cockpit(ttkFrame):
         self._shiftCanvas.bind("<B3-Motion>", self._onMouseButton3Motion)
 
         self._shiftCanvas.grid(row=0,column=1, padx=2, pady=2)
-        self._shiftCanvas.create_oval(2, 2, 400, 400, outline="#ff0000")
-        self._shiftCanvas.create_line(201, 2, 201, 400, fill="#ff0000")
-        self._shiftCanvas.create_line(2, 201, 400, 201, fill="#ff0000")
-        self._shiftMarker = self._shiftCanvas.create_oval(197, 197, 205, 205, outline="#0000ff", fill="#0000ff")
+        self._shiftCanvas.create_oval(1, 1, 400, 400, outline="#ff0000")
+        self._shiftCanvas.create_line(200, 2, 200, 400, fill="#ff0000")
+        self._shiftCanvas.create_line(2, 200, 400, 200, fill="#ff0000")
+        self._shiftMarker = self._shiftCanvas.create_oval(196, 196, 204, 204, outline="#0000ff", fill="#0000ff")
         
         self._yaw = DoubleVar()
         self._yawScale = Scale(controlFrame, orient=HORIZONTAL, from_=-100.0, to=100.0, \
@@ -277,7 +291,7 @@ class Cockpit(ttkFrame):
 
         self._pidPString = StringVar()
         self._pidPString.set("0.00")
-        self._pidPSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=100.0, increment=0.01, state=DISABLED, \
+        self._pidPSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=10000.0, increment=0.01, state=DISABLED, \
                                          textvariable=self._pidPString, command=self._onPidSpinboxChanged)
         self._pidPSpinbox.pack(side=LEFT, padx=2)
 
@@ -285,7 +299,7 @@ class Cockpit(ttkFrame):
 
         self._pidIString = StringVar()
         self._pidIString.set("0.00")
-        self._pidISpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=100.0, increment=0.01, state=DISABLED, \
+        self._pidISpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=10000.0, increment=0.01, state=DISABLED, \
                                          textvariable=self._pidIString, command=self._onPidSpinboxChanged)
         self._pidISpinbox.pack(side=LEFT, padx=2)
         
@@ -293,7 +307,7 @@ class Cockpit(ttkFrame):
         
         self._pidDString = StringVar()
         self._pidDString.set("0.00")
-        self._pidDSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=100.0, increment=0.01, state=DISABLED, \
+        self._pidDSpinbox = Spinbox(pidCalibrationFrame, width=5, from_=0.0, to=10000.0, increment=0.01, state=DISABLED, \
                                          textvariable=self._pidDString, command=self._onPidSpinboxChanged)
         self._pidDSpinbox.pack(side=LEFT, padx=2)
         
@@ -310,6 +324,77 @@ class Cockpit(ttkFrame):
 
         self._readDroneConfig()
         
+        if Cockpit.JOYSTICK_ENABLED:
+            self._joystickManager = JoystickManager.getInstance()
+            self._joystickManager.start()
+            
+            joysticks = self._joystickManager.getJoysticks()
+            if len(joysticks) != 0:
+                self._joystick = joysticks[0]
+                self._joystick.onAxisChanged += self._onJoystickAxisChanged
+                self._joystick.onButtonPressed += self._onJoystickButtonPressed
+            else:
+                self._joystick = None     
+        
+        
+    def _onJoystickAxisChanged(self, sender, index):
+        
+        if self._started.get() and sender == self._joystick:
+            
+            axisValue = self._joystick.getAxisValue(index) 
+            
+            if index == 0:
+                
+                self._yaw.set(axisValue)
+                self._updateTarget()
+            
+            elif index == 1 and not Cockpit.THROTTLE_BY_USER:
+            
+                thrust = -axisValue
+                self._throttle.set(thrust)            
+                self._updateTarget()
+
+            elif index == 2 and Cockpit.THROTTLE_BY_USER:            
+            
+                rowThrottle = (axisValue + 100.0)/2.0 
+                if rowThrottle < 10.0:
+                    throttle = rowThrottle * 6.0
+                elif rowThrottle < 90.0:
+                    throttle = 60.0 + ((rowThrottle - 10.0) / 8.0)
+                else:
+                    throttle = 70.0 + (rowThrottle - 90.0) * 3.0
+                self._throttle.set(throttle)
+                self._sendThrottle()
+                
+            elif index == 3:
+                
+                x = 196 + axisValue * 2                
+                lastCoords = self._shiftCanvas.coords(self._shiftMarker)
+                coords = (x, lastCoords[1])                 
+                self._plotShiftCanvasMarker(coords)
+                
+            elif index == 4:
+                
+                y = 196 + axisValue * 2 
+                lastCoords = self._shiftCanvas.coords(self._shiftMarker)
+                coords = (lastCoords[0], y)                 
+                self._plotShiftCanvasMarker(coords)
+
+
+    def _onJoystickButtonPressed(self, sender, index):
+        
+        if sender == self._joystick and index == 7:
+            
+            if self._started.get() == 0:
+                self._startedCB.select()
+            else:
+                self._startedCB.deselect()
+                
+            # Tkinter's widgets seem not to be calling the event-handler
+            # when they are changed programmatically. Therefore, the 
+            # even-handler is called explicitly here.
+            self._startedCBChanged()
+        
     
     def exit(self):
         
@@ -319,6 +404,9 @@ class Cockpit(ttkFrame):
         
         self._link.close()
 
+        if Cockpit.JOYSTICK_ENABLED:
+            self._joystickManager.stop()
+        
         self.quit()
 
 
@@ -327,15 +415,16 @@ class Cockpit(ttkFrame):
         markerCoords = self._shiftCanvas.coords(self._shiftMarker)
         coords = ((markerCoords[0] + markerCoords[2]) / 2, (markerCoords[1] + markerCoords[3]) / 2)
         
-        self._target[1] = float(coords[0] - 201) * Cockpit.MAX_ACCEL / 200.0
-        self._target[0] = float(coords[1] - 201) * Cockpit.MAX_ACCEL / 200.0      
+        self._target[0] = float(coords[1] - 200) / 2.0 # X-axis angle / X-axis acceleration
+        self._target[1] = float(coords[0] - 200) / 2.0 # Y-axis angle / Y-axis acceleration
         #Remote control uses clockwise angle, but the drone's referece system uses counter-clockwise angle
-        self._target[2] = -self._yaw.get() * Cockpit.MAX_ANGLE_SPEED / 100.0
+        self._target[2] = -self._yaw.get() # Z-axis angular speed
         
+        # Z-axis acceleration (thrust). Only when the motor throttle is not controlled by user directly
         if Cockpit.THROTTLE_BY_USER:
             self._target[3] = 0.0
         else:        
-            self._target[3] = self._throttle.get() * Cockpit.MAX_ACCEL_Z / 100.0
+            self._target[3] = self._throttle.get()
         
         self._sendTarget() 
     
@@ -402,26 +491,29 @@ class Cockpit(ttkFrame):
         
     def _onMouseButtonRelease1(self, eventArgs):
 
-        self._shiftCanvas.coords(self._shiftMarker, 197, 197, 205, 205)
+        self._shiftCanvas.coords(self._shiftMarker, 196, 196, 204, 204)
 
     
-    def _limitCoordsToSize(self, coords, size):
+    def _limitCoordsToSize(self, coords, size, width):
         
-        if coords[0] > size:
-            x = size
+        maxSize = size-(width/2.0)
+        minSize = -(width/2.0)
         
-        elif coords[0] < 0:
-            x = 0
+        if coords[0] > maxSize:
+            x = maxSize
+        
+        elif coords[0] < minSize:
+            x = minSize
             
         else:
             x = coords[0]
             
             
-        if coords[1] > size:
-            y = size
+        if coords[1] > maxSize:
+            y = maxSize
             
-        elif coords[1] < 0:
-            y = 0
+        elif coords[1] < minSize:
+            y = minSize
             
         else:
             y = coords[1]
@@ -430,19 +522,23 @@ class Cockpit(ttkFrame):
         return (x,y)
     
     
+    def _plotShiftCanvasMarker(self, coords):
+        
+        coords = self._limitCoordsToSize(coords, 400, 8)
+        self._shiftCanvas.coords(self._shiftMarker, coords[0], coords[1], coords[0] + 8, coords[1] + 8)
+        self._updateTarget()
+
+    
     def _moveShiftCanvasMarker(self, shift):
 
         lastCoords = self._shiftCanvas.coords(self._shiftMarker)
         newCoords = (lastCoords[0] + shift[0], lastCoords[1] + shift[1])        
-        newCoords = self._limitCoordsToSize(newCoords, 400)
-    
-        self._shiftCanvas.coords(self._shiftMarker, newCoords[0], newCoords[1], newCoords[0] + 8, newCoords[1] + 8)
-        self._updateTarget()
+        self._plotShiftCanvasMarker(newCoords)
     
     
     def _resetShiftCanvasMarker(self):
     
-        self._shiftCanvas.coords(self._shiftMarker, 197, 197, 205, 205)
+        self._shiftCanvas.coords(self._shiftMarker, 196, 196, 204, 204)
         self._updateTarget()
         
     
@@ -466,7 +562,7 @@ class Cockpit(ttkFrame):
         
     def _onMouseButtonRelease3(self, eventArgs):
 
-        self._shiftCanvas.coords(self._shiftMarker, 197, 197, 205, 205)
+        self._shiftCanvas.coords(self._shiftMarker, 196, 196, 204, 204)
 
         
     def _onMouseButton3Motion(self, eventArgs):
@@ -490,9 +586,10 @@ class Cockpit(ttkFrame):
     
     def _thrustScaleUp(self):
 
+        #TODO: 20160526 DPM: El valor de incremento de aceleración (1.0) puede ser muy alto
         if self._started.get(): 
             newValue = self._thrustScale.get() \
-                + (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
+                + (Cockpit.THROTTLE_RESOLUTION if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
             self._updateTarget()
@@ -500,9 +597,10 @@ class Cockpit(ttkFrame):
     
     def _thrustScaleDown(self):
         
+        #TODO: 20160526 DPM: El valor de decremento de aceleración (1.0) puede ser muy alto
         if self._started.get():
             newValue = self._thrustScale.get() \
-                - (0.1 if Cockpit.THROTTLE_BY_USER else 1.0)
+                - (Cockpit.THROTTLE_RESOLUTION if Cockpit.THROTTLE_BY_USER else 1.0)
             self._thrustScale.set(newValue)
             
             self._updateTarget()
@@ -710,12 +808,22 @@ class Cockpit(ttkFrame):
     def _onDroneStateRead(self, state):
         
         if state:
+            
             for index in range(4):
                 self._throttleTexts[index].set("{0:.3f}".format(state["_throttles"][index]))
                 
             for index in range(3):
                 self._accelTexts[index].set("{0:.3f}".format(state["_accels"][index]))
                 self._angleTexts[index].set("{0:.3f}".format(state["_angles"][index]))
+                
+            currentPeriod = state["_currentPeriod"]
+            if currentPeriod > 0.0:
+                
+                freq = 1.0/currentPeriod                
+                self._loopRateText.set("{0:.3f}".format(freq))
+                
+            else:
+                self._loopRateText.set("--")
                 
         else:
             self._stopUpdateInfoThread()

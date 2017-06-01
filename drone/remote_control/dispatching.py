@@ -6,7 +6,11 @@ Created on 15/06/2015
 @author: david
 '''
 
-from SocketServer import StreamRequestHandler
+import sys
+if sys.version_info.major < 3:
+    from SocketServer import StreamRequestHandler
+else:
+    from socketserver import StreamRequestHandler
 import json
 import logging
 from threading import Thread
@@ -18,11 +22,18 @@ from flight.controller import FlightController
 
 class Dispatcher(StreamRequestHandler):
 
+    MAX_ANGLE = 20.0 #TODO currently angles. Replace by acceleration (m/s²) later
+    MAX_ACCEL_Z = 1.0 #m/s² steps of 0.01 m/s²
+    MAX_ANGLE_SPEED = 50.0 #º/s for yaw
+    
+    PID_THROTTLE_THRESHOLD = 1.0 #Threshold to activate or deactivate the PID
+
     def setup(self):
         
         StreamRequestHandler.setup(self)
         
         self._controller = FlightController.getInstance()
+        self._controller.setPidThrottleThreshold(Dispatcher.PID_THROTTLE_THRESHOLD)
         self._controller.start()
         
         self._throttleByUser = False
@@ -40,13 +51,13 @@ class Dispatcher(StreamRequestHandler):
         
         logMessage = "Remote control connected. Waiting for commands..."
         logging.info(logMessage)
-        print logMessage
+        print(logMessage)
 
         try:
             done = False
             while not done:
                 
-                rawMessage = self.rfile.readline().strip()
+                rawMessage = self.rfile.readline().strip().decode("utf-8")
                 
                 if rawMessage != "":
                     message = json.loads(rawMessage)
@@ -65,14 +76,19 @@ class Dispatcher(StreamRequestHandler):
 
         logMessage = "Connection end"
         logging.info(logMessage)
-        print logMessage
+        print(logMessage)
 
   
     def _dispatch(self, message):
         
         if self._started and message["key"] == "target":
             
-            newTargets = message["data"]
+            controlData = message["data"]
+            newTargets = [controlData[0] * Dispatcher.MAX_ANGLE / 100.0,
+                          controlData[1] * Dispatcher.MAX_ANGLE / 100.0,
+                          controlData[2] * Dispatcher.MAX_ANGLE_SPEED / 100.0,
+                          controlData[3] * Dispatcher.MAX_ACCEL_Z / 100.0]            
+            
             self._controller.setTargets(newTargets)
             
         elif self._started and message["key"] == "throttle":
@@ -106,10 +122,8 @@ class Dispatcher(StreamRequestHandler):
             
             if self._started:
                 self._controller.standBy()
-                self._controller.startPid()
                     
             else:                
-                self._controller.stopPid()
                 self._controller.idle()                
 
 #         elif message["key"] == "integrals":
@@ -162,7 +176,7 @@ class Dispatcher(StreamRequestHandler):
             
             try:        
                 serializedMessage = json.dumps({"key": responseKey, "response": message})                
-                self.wfile.write(serializedMessage + "\n")
+                self.wfile.write((serializedMessage + "\n").encode("utf-8"))
                 
             except Exception as ex:
                 logging.error("Cannot send object '{0}': {1}".format(message, ex))            

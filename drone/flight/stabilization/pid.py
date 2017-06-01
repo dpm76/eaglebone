@@ -13,6 +13,9 @@ class PID(object):
     '''
     Proportional Integrative Derivative stabilizer
     '''
+    
+    #Period range to be considered as correct loop rate
+    PERIOD_RANGE_MARGIN = 0.1
 
     def __init__(self, period, kpMatrix, kiMatrix, kdMatrix, readInputDelegate, setOutputDelegate, pidName = ""):
         '''
@@ -29,8 +32,13 @@ class PID(object):
         self._integrals = [0.0] * length
         self._lastErrors = [0.0] * length
         
-        self._period = period
+        self._period = period        
+        self._minPeriod = period * (1.0 - PID.PERIOD_RANGE_MARGIN)
+        self._maxPeriod = period * (1.0 + PID.PERIOD_RANGE_MARGIN)
+        self._periodTarget = (self._minPeriod + self._period) / 2.0 
+        
         self._lastTime = time.time()
+        self._currentPeriod = period
         
         self._kp = kpMatrix
         self._ki = kiMatrix
@@ -40,11 +48,11 @@ class PID(object):
         self._setOutput = setOutputDelegate
     
         self._isRunning = False
-        self._thread = Thread(target=self._do)
+        self._thread = None
         
         self._length = length
         
-        self._integralsEnabled = True
+#         self._integralsEnabled = True
         
         self._deltaTimeSum = 0.0
         self._iterationCount = 0
@@ -62,11 +70,11 @@ class PID(object):
             
             error = self._targets[i] - currentValues[i]
             
-            if self._integralsEnabled:
-                self._integrals[i] += error * dt
-            else:
-                self._integrals[i] = 0.0
-                        
+            #if self._integralsEnabled:
+            self._integrals[i] += error * dt
+#             else:
+#                 self._integrals[i] = 0.0
+#                         
             result = \
                 self._kp[i] * error \
                 + self._ki[i] * self._integrals[i] \
@@ -78,6 +86,7 @@ class PID(object):
         self._lastTime = currentTime
         self._setOutput(outputArray)
         
+        self._currentPeriod = dt
         self._deltaTimeSum += dt
         self._iterationCount += 1
     
@@ -101,11 +110,27 @@ class PID(object):
         
         return self._targets
         
+        
+    def getCurrentPeriod(self):
+        
+        return self._currentPeriod
+    
     
     def _do(self): 
         
-        dtSum = 0.0
-        iterCount = 0
+        #dtSum = 0.0
+        iterCount = 0        
+        underFreq = 0
+        overFreq = 0
+        rightFreq = 0
+        acceptableFreq = 0
+        
+        diff = 0.0
+        
+        minFreq = 1.0/self._maxPeriod
+        message = "Minimal freq. is {0:.3f}Hz.".format(minFreq)
+        print(message)
+        logging.info(message)
         
         self._lastTime = time.time()
         time.sleep(self._period)
@@ -116,20 +141,26 @@ class PID(object):
             self._calculate()
             
             calculationTime = time.time() - t0
-            dtSum += calculationTime
-            iterCount += 1            
-            
-            sleepTime = self._period - calculationTime 
+            #dtSum += calculationTime
+            iterCount += 1
+                 
+            if self._currentPeriod < self._minPeriod:
+                overFreq += 1
+            elif self._currentPeriod >= self._minPeriod and self._currentPeriod <= self._period:
+                rightFreq += 1
+            elif self._currentPeriod > self._period and self._currentPeriod <= self._maxPeriod:
+                acceptableFreq += 1
+            else:
+                underFreq += 1
+
+            diff += self._periodTarget - self._currentPeriod
+            sleepTime = self._period - calculationTime + 0.1 * diff
             if sleepTime > 0.0:            
                 time.sleep(sleepTime)
             else:
-                freq = 1.0/self._period
-                maxFreq = 1.0/calculationTime
-                message="This machine cannot operate at {0:.0f}Hz. Max @{1:.3f}Hz".format(freq, maxFreq)
-                print message
-                logging.error(message)
                 time.sleep(0.001)
 
+        '''        
         if dtSum != 0.0 and iterCount != 0:
             tAvg = dtSum * 1000.0 / iterCount
             fAvg = float(iterCount) / dtSum
@@ -139,26 +170,42 @@ class PID(object):
             
         message = "PID-\"{0}\" (net values) t: {1:.3f}ms; f: {2:.3f}Hz".format(self._pidName, tAvg, fAvg)
         logging.info(message)
-        print message
+        print(message)
+        '''
+        
+        underFreqPerc = underFreq * 100.0 / iterCount
+        overFreqPerc = overFreq * 100.0 / iterCount
+        rightFreqPerc = rightFreq * 100.0 / iterCount
+        acceptableFreqPerc = acceptableFreq * 100.0 / iterCount       
+        message = "In freq: {0:.3f}%; Acceptable: {1:.3f}%; Under f.: {2:.3f}%; Over f.: {3:.3f}%"\
+            .format(rightFreqPerc, acceptableFreqPerc, underFreqPerc, overFreqPerc)
+        logging.info(message)
+        print(message)
         
     
     def start(self):
         
-        if not self._thread.isAlive():
+        if self._thread == None or not self._thread.isAlive():
             
             logging.info("Starting PID-\"{0}\"".format(self._pidName))
 
             self._deltaTimeSum = 0.0
             self._iterationCount = 0
             
+            #Reset PID variables
+            length = len(self._kp)
+            self._integrals = [0.0] * length
+            self._lastErrors = [0.0] * length
+            
             self._isRunning = True
+            self._thread = Thread(target=self._do)
             self._thread.start()
             
         
     def stop(self):
         
         self._isRunning = False        
-        if self._thread.isAlive():
+        if self._thread != None and self._thread.isAlive():
             
             self._thread.join()
             
@@ -173,17 +220,22 @@ class PID(object):
                 averageFrequency = float("inf")
                 
             message = "PID-\"{0}\" - Avg. time: {1:.3f}ms - Avg. freq: {2:.3f}Hz".format(self._pidName, averageDeltaTime, averageFrequency)
-            print message
+            print(message)
             logging.info(message)
                 
     
-    def disableIntegrals(self):
+    def isRunning(self):
         
-        self._integralsEnabled = False
-        
-        
-    def enableIntegrals(self):
-        
-        self._integralsEnabled = True
- 
+        return self._isRunning
+    
+    
+#     def disableIntegrals(self):
+#         
+#         self._integralsEnabled = False
+#         
+#         
+#     def enableIntegrals(self):
+#         
+#         self._integralsEnabled = True
+       
     

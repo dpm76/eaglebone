@@ -38,6 +38,12 @@ class Configuration(object):
     PID_ACCEL_KP = "PID_ACCEL_KP"
     PID_ACCEL_KI = "PID_ACCEL_KI"
     PID_ACCEL_KD = "PID_ACCEL_KD"
+    
+    KEY_MAX_ANGLE_X = "MAX_ANGLE_X"
+    KEY_MAX_ANGLE_Y = "MAX_ANGLE_Y"
+    KEY_MAX_ANGLE_SPEED_X = "MAX_ANGLE_SPEED_X"
+    KEY_MAX_ANGLE_SPEED_Y = "MAX_ANGLE_SPEED_Y"
+    KEY_MAX_ANGLE_SPEED_Z = "MAX_ANGLE_SPEED_Z"
 
     
     DEFAULT_CONFIG = {
@@ -56,7 +62,13 @@ class Configuration(object):
                       
                       PID_ACCEL_KP: [0.0, 0.0, 0.0],  
                       PID_ACCEL_KI: [0.0, 0.0, 0.0],  
-                      PID_ACCEL_KD: [0.0, 0.0, 0.0]
+                      PID_ACCEL_KD: [0.0, 0.0, 0.0],
+                      
+                      KEY_MAX_ANGLE_X: 0.0,
+                      KEY_MAX_ANGLE_Y: 0.0,
+                      KEY_MAX_ANGLE_SPEED_X: 0.0,
+                      KEY_MAX_ANGLE_SPEED_Y: 0.0,
+                      KEY_MAX_ANGLE_SPEED_Z: 0.0
                       }
     
     _instance = None
@@ -91,8 +103,17 @@ class Configuration(object):
                     self._config[key] = storedConfig[key]
                     
         #Write current config into file
+        self.writeFile(Configuration.FILE_PATH)
+            
+
+    def writeFile(self, filePath):
+        '''
+        Writes current config into file.
+        @param filePath: Filepath where to store the current configuration.  
+        '''
+        
         serializedConfig = json.dumps(self._config)        
-        with open(Configuration.FILE_PATH, "w+") as configFile:
+        with open(filePath, "w+") as configFile:
             configFile.write(serializedConfig + "\n")
             configFile.close()
             

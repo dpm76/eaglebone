@@ -20,14 +20,18 @@ class EmulatedDrone(object):
     Emulates a physical drone
     '''
     
-    #TODO Create config
-    REALISTIC_FLIGHT = True #Realistic or ideal flight emulation mode
-    X_CONFIGURATON = False # Indicates whether the drone is configured as X or + 
-    PROPELLER_THRUST_RATE = 0.01 # 1.0kg @100%
-    PROPELLER_COUNTER_ROTATION_RATE = 50.0    
-    WEIGHT = 1.8 # kg
-    MAX_CRASH_SPEED = -1.0 #m/s
-    ARM_LENGTH = 0.23 #m    
+    #TODO: Create config
+    REALISTIC_FLIGHT = False #Realistic or ideal flight emulation mode
+    HANGED_MODE = True #Emulates the drone hanged by ropes. It doesn't move, but speeds and accelerations changes.
+    X_CONFIGURATON = True # Indicates whether the drone is configured as X or + 
+    PROPELLER_THRUST_RATE = 0.0075 # 0.75kg/propeller @100% (total x4 propellers: 3.0kg max. thrust)
+    PROPELLER_COUNTER_ROTATION_RATE = 1000.0    
+    WEIGHT = 1.6 # kg
+    MAX_CRASH_SPEED = -1000.0 #m/s
+    ARM_LENGTH = 0.23 #m
+    
+    HORIZONTAL_FRICTION_CONSTANT = 0.1
+    VERTICAL_FRICTION_CONSTANT = 0.4
     #end config
     
     R1 = sqrt(2.0)/2.0 # constant used for angle rotation in X-configuration mode
@@ -50,22 +54,34 @@ class EmulatedDrone(object):
         self._state = State()
         if EmulatedDrone.X_CONFIGURATON:
             self._state._angles = [0.0, 0.0, -45.0]
+
+        if EmulatedDrone.HANGED_MODE:
+            self._state._coords = [0.0, 0.0, 1.0]            
+            
         self._weight = EmulatedDrone.WEIGHT        
         self._armLength = EmulatedDrone.ARM_LENGTH        
         self._arcSpeedToAngleSpeed = 180.0/PI*self._armLength
         
+        # Propellers and motor are configured as follows:
+        #
+        #               (4) ^ (1)
+        #                  \ /
+        #                   X
+        #                  / \
+        #               (3)   (2)
+        #
         if self._realisticFlight:
         
-            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.98, 1.01 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.96, 0.97 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.93, 0.99 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.99, 1.03 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
+            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.98, 1.01 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.97, 0.97 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.96, 0.99 * self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 0.99, 1.03 * self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
         else:
             
-            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+            self._propellers = [Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
                                 Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
-                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CCW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE),
+                                Propeller(self, EmulatedDrone.PROPELLER_THRUST_RATE, 1.0, self._weight/4.0, Propeller.ROTATION_CW, EmulatedDrone.PROPELLER_COUNTER_ROTATION_RATE)]
 
         self._propellersCount = len(self._propellers)
 
@@ -83,6 +99,9 @@ class EmulatedDrone(object):
             
             currentTime = time.time() 
             dt = currentTime - self._state._time
+            #Detect pid stopped 
+            if dt > 0.1:
+                dt = 0.0
             dt2 = dt/2.0
             self._state._time = currentTime
         
@@ -97,15 +116,26 @@ class EmulatedDrone(object):
                 propellerForces = propeller.getThrust()                
                 self._state._angleSpeeds[2] += propeller.getTorque()
                 forces = map(add, forces, propellerForces)
+            
+            forces = [force for force in forces]            
+            forces[0] -= self._state._speeds[0] * EmulatedDrone.HORIZONTAL_FRICTION_CONSTANT
+            forces[1] -= self._state._speeds[1] * EmulatedDrone.HORIZONTAL_FRICTION_CONSTANT
+            forces[2] -= self._state._speeds[2] * EmulatedDrone.VERTICAL_FRICTION_CONSTANT
 
             previousAccels = deepcopy(self._state._accels)
-            self._state._accels = [force / self._weight for force in forces]
+            self._state._accels = [force / self._weight for force in forces]            
             
             #Speed & position
-            for index in range(3):
-                previousSpeed = self._state._speeds[index]
-                self._state._speeds[index] += (self._state._accels[index] + previousAccels[index]) * dt2
-                self._state._coords[index] += (self._state._speeds[index] + previousSpeed) * dt2
+            if EmulatedDrone.HANGED_MODE:
+
+                for index in range(3):
+                    self._state._speeds[index] += (self._state._accels[index] + previousAccels[index]) * dt2
+
+            else:
+                for index in range(3):
+                    previousSpeed = self._state._speeds[index]
+                    self._state._speeds[index] += (self._state._accels[index] + previousAccels[index]) * dt2
+                    self._state._coords[index] += (self._state._speeds[index] + previousSpeed) * dt2
             
             #The drone can not fly underground
             if self._state._coords[2] <= 0.0 and self._state._speeds[2] <= 0.0:
@@ -130,7 +160,8 @@ class EmulatedDrone(object):
                 #Calculate drone's current yaw (self._state._angles[2])
                 #Positive angles are CCW for axis Z
                 self._state._angles[2] += (self._state._angleSpeeds[2] + previousAngleSpeedZ) * dt2           
-                    
+                self._state._angles[2] = self._normalizeAngle(self._state._angles[2])
+                
                 #Calculate drone's angle-speeds
                 accelAxisX = self._propellers[3].getOrtogonalAccel() - self._propellers[1].getOrtogonalAccel()
                 previousAngleSpeedX = self._state._angleSpeeds[0]
@@ -140,18 +171,30 @@ class EmulatedDrone(object):
                 previousAngleSpeedY = self._state._angleSpeeds[1]
                 self._state._angleSpeeds[1] += accelAxisY * dt * self._arcSpeedToAngleSpeed            
     
-                #Calculate drone's angles (heading was already calculated)
+                #Calculate drone's angles (heading was already calculated)                
                 self._state._angles[0] += (self._state._angleSpeeds[0] + previousAngleSpeedX) * dt2
-                self._state._angles[1] += (self._state._angleSpeeds[1] + previousAngleSpeedY) * dt2                         
+                self._state._angles[0] = self._normalizeAngle(self._state._angles[0])
+                self._state._angles[1] += (self._state._angleSpeeds[1] + previousAngleSpeedY) * dt2
+                self._state._angles[1] = self._normalizeAngle(self._state._angles[1])                                         
     
             #Update propeller angles
             for propeller in self._propellers:
                 propeller.setAngles(self._state._angles)
 
             #if dt < 1.0:
-            #    print self._state            
+            #    print self._state
         
+    
+    def _normalizeAngle(self, angle):
         
+        if angle < -180.0:
+            angle +=  360.0
+        elif angle > 180.0: 
+            angle -= 360.0
+            
+        return angle
+     
+    
     def getState(self):
         
         currentState = deepcopy(self._state)

@@ -76,7 +76,7 @@ class IMUDummy(object):
 
         text = "Using dummy IMU." 
 
-        print text
+        print(text)
         logging.info(text)
     
     def calibrate(self):

@@ -25,9 +25,12 @@ class Driver(object):
     
     NUM_MOTORS = 4
     
-    def __init__(self):
+    def __init__(self, motorType=""):
         '''
         Constructor
+
+        @param motorType: String with the type of the motor to implement. See Configuration.VALUE_MOTOR_CLASS_*
+        If motorType value is not provided, the configuration will be used.
         '''
         
         self._lock = Lock()
@@ -37,8 +40,11 @@ class Driver(object):
         self._baseThrottle = 0.0
         self._motorIncrements = [0.0] * Driver.NUM_MOTORS
 
+        if motorType == "":
+            motorType = self._config[Configuration.KEY_MOTOR_CLASS]
+
         for motorId in range(Driver.NUM_MOTORS):
-            motor = self._createMotor(motorId, self._config[Configuration.KEY_MOTOR_CLASS])
+            motor = self._createMotor(motorId, motorType)
             self._motors.append(motor)            
             
     
@@ -49,20 +55,22 @@ class Driver(object):
         
         if motorClass == Configuration.VALUE_MOTOR_CLASS_LOCAL:
             motor = Motor(motorId)
+            self._maxMotorThrottle = Motor.MAX_THROTTLE
             
         elif motorClass == Configuration.VALUE_MOTOR_CLASS_REMOTE:
-            #TODO Implement remote motor class
-            message = "Remote motor is not implemented yet!"
-            print message
+            #TODO deprecated: this feature won't be implemented
+            message = "Remote motor will not be implemented!"
+            print(message)
             logging.fatal(message)
             sys.exit()
             
         elif motorClass == Configuration.VALUE_MOTOR_CLASS_EMULATION:
             motor = EmulatedMotor(motorId)
+            self._maxMotorThrottle = EmulatedMotor.MAX_THROTTLE
             
         else: #default VALUE_MOTOR_CLASS_DUMMY
             motor = MotorDummy(motorId)        
-            
+            self._maxMotorThrottle = MotorDummy.MAX_THROTTLE            
             
         return motor
             
@@ -113,7 +121,6 @@ class Driver(object):
             
     def addThrottle(self, increment):
 
-        #TODO 20150611 DPM - Should the throttle be added into the increments and to be commited later?
         with self._lock:
             self._baseThrottle += increment
             #for motor in self._motors:
@@ -144,11 +151,11 @@ class Driver(object):
         
         with self._lock:
    
-            self._motorIncrements[0] += increment
-            self._motorIncrements[2] += increment
+            self._motorIncrements[0] += -increment
+            self._motorIncrements[2] += -increment
 
-            self._motorIncrements[1] += -increment
-            self._motorIncrements[3] += -increment
+            self._motorIncrements[1] += increment
+            self._motorIncrements[3] += increment
 
 
     def commitIncrements(self):
@@ -169,3 +176,18 @@ class Driver(object):
     def getThrottles(self):
         
         return [motor.getThrottle() for motor in self._motors]
+    
+    
+    def getBaseThrottle(self):
+        
+        return self._baseThrottle
+    
+    
+    def setThrottle(self, throttle):
+
+        with self._lock:
+            self._baseThrottle = throttle
+            for motor in self._motors:
+                motor.setThrottle(throttle)
+
+            

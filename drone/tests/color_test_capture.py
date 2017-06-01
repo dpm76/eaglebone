@@ -22,7 +22,7 @@ def main():
         if key == ord('q'):
             done = True
         elif key == ord('c'):
-            cv2.imwrite('/home/david/test.png', frame)
+            cv2.imwrite('/home/david/dummy.png', frame)
             print "captured"
         
 

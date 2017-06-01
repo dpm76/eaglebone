@@ -5,10 +5,12 @@ Created on 04/03/2016
 @author: david
 '''
 
+from copy import deepcopy
+import json
 import logging
 from math import degrees
+from os import path
 from threading import Thread, Lock
-from copy import deepcopy
 import time
 
 from sensors.pycomms.mpu6050 import MPU6050
@@ -20,6 +22,7 @@ class Imu6050Dmp(object):
     IMU-6050 using the DMP (digital motion processing) feature
     '''
 
+    CALIBRATION_FILE_PATH = "./sensor-calibration.json"
     GRAVITY = 9.807
 
     def __init__(self):
@@ -184,7 +187,7 @@ class Imu6050Dmp(object):
 
         text = "Using IMU-6050 (DMP)." 
 
-        print text
+        print(text)
         logging.info(text)
 
         self._imu.dmpInitialize()
@@ -200,8 +203,8 @@ class Imu6050Dmp(object):
 
     
     def calibrate(self):
-        
-        print "Calibrating..."
+    
+        print("Calibrating...")
         time.sleep(20)        
         self._imu.resetFIFO()
         
@@ -209,13 +212,29 @@ class Imu6050Dmp(object):
         time.sleep(0.05)
         
         with self._packetLock:
-            packet = deepcopy(self._packet) #self._readPacket()
+            packet = deepcopy(self._packet)
         
         q = self._imu.dmpGetQuaternion(packet)
         g = self._imu.dmpGetGravity(q)
         
-        ypr = self._imu.dmpGetYawPitchRoll(q, g)
-        self._angleOffset = [ypr["pitch"], ypr["roll"], ypr["yaw"]]
+        if path.exists(Imu6050Dmp.CALIBRATION_FILE_PATH):
+                        
+            with open(Imu6050Dmp.CALIBRATION_FILE_PATH, "r") as calibrationFile:
+                serializedCalibration = " ".join(calibrationFile.readlines())
+                calibrationFile.close()
+                
+            self._angleOffset = json.loads(serializedCalibration)
+            
+        else:
+                
+            ypr = self._imu.dmpGetYawPitchRoll(q, g)
+            self._angleOffset = [ypr["pitch"], ypr["roll"], ypr["yaw"]]
+            
+            #Save calibration
+            serializedCalibration = json.dumps(self._angleOffset)
+            with open(Imu6050Dmp.CALIBRATION_FILE_PATH, "w+") as calibrationFile:
+                calibrationFile.write(serializedCalibration + "\n")
+                calibrationFile.close()
         
         accelRaw = self._imu.dmpGetAccel(packet)
         linearAccel = self._imu.dmpGetLinearAccel(accelRaw, g)
@@ -237,13 +256,13 @@ class Imu6050Dmp(object):
         self._imu.setDMPEnabled(False)
         self._imu.setSleepEnabled(True)
 
-        print "IMU stats:"
-        print "-angle speeds"
-        print Imu6050Dmp._statisticsToString(self._angSpeedsStats)
-        print "-angles"
-        print Imu6050Dmp._statisticsToString(self._anglesStats)
-        print "-accels"
-        print Imu6050Dmp._statisticsToString(self._accelsStats)
+        print("IMU stats:")
+        print("-angle speeds")
+        print(Imu6050Dmp._statisticsToString(self._angSpeedsStats))
+        print("-angles")
+        print(Imu6050Dmp._statisticsToString(self._anglesStats))
+        print("-accels")
+        print(Imu6050Dmp._statisticsToString(self._accelsStats))
         
 
     def _doPacketReading(self):

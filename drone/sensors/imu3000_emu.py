@@ -218,7 +218,7 @@ class Imu3000Emulated(object):
         
         #Initializes gyro
         text = "Using emulated IMU-3000."
-        print text
+        print(text)
         logging.info(text)
         
         self._accLastFilteredRawData = [self._readRawAccelX(), self._readRawAccelY(), self._readRawAccelZ()]
@@ -231,7 +231,7 @@ class Imu3000Emulated(object):
         Calibrates sensor
         '''
         
-        print "Calibrating accelerometer..."
+        print("Calibrating accelerometer...")
         self._accOffset = [0.0]*3
         
         i = 0
@@ -249,7 +249,7 @@ class Imu3000Emulated(object):
         
         
         #Calibrate gyro
-        print "Calibrating gyro..."
+        print("Calibrating gyro...")
         self._gyroOffset = [0.0]*3
         
         i = 0
