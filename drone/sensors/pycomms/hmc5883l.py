@@ -78,8 +78,8 @@ class HMC5883L:
     
     mode = 0
 
-    def __init__(self, address = HMC5883L_DEFAULT_ADDRESS):
-        self.i2c = PyComms(address)
+    def __init__(self, address = HMC5883L_DEFAULT_ADDRESS, channel=1):
+        self.i2c = PyComms(address, channel)
         self.address = address
         
     def initialize(self):
