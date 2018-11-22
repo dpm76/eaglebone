@@ -119,7 +119,7 @@ class EmulatedMotorTestCase(unittest.TestCase):
         self.assertEquals(currentThrottle, EmulatedMotor.MAX_THROTTLE, "Motor throttle was not properly changed")
 
 
-    def test_setMaxThrottle(self):
+    def test_setMinThrottle(self):
 
         self._motor.setMinThrottle()
 
